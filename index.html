@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>구매 관리 보드</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -338,7 +343,8 @@ label.f{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--in
   .qr{grid-template-columns:24px minmax(0,1fr);grid-template-areas:"chk item" "chk prog" "chk due" "chk nq" "chk nd" "chk fu" "chk st" "chk rc" "chk memo"}
 }
 </style>
-
+</head>
+<body>
 <div class="app">
   <header class="top">
     <div>
@@ -1373,3 +1379,5 @@ window.addEventListener('resize',()=>{if(S.tab==='lines')drawVT()});
 renderAll();
 })();
 </script>
+</body>
+</html>

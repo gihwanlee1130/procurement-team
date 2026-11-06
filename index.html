@@ -247,6 +247,12 @@ body{background:radial-gradient(900px 320px at 88% -90px,var(--accent-soft),tran
 .g tbody tr:hover td.p2{background:color-mix(in srgb,var(--p2) 22%,var(--p2s))}
 .g td.pb,.g th.pb{border-left:2px solid var(--line)}
 .g tbody td.p1.mod,.g tbody td.p2.mod{background:var(--edit)}
+
+.hs{overflow-x:auto;overflow-y:hidden;height:16px;margin-bottom:-8px}
+.hs div{height:1px}
+.tw.drag{cursor:grabbing;user-select:none}
+.tw.drag td{cursor:grabbing!important}
+#jump button{padding:6px 12px;font-size:12.5px}
 @media (max-width:900px){.tw{max-height:calc(100vh - 260px)}}
 </style>
 <div class="app" id="app">
@@ -273,10 +279,12 @@ body{background:radial-gradient(900px 320px at 88% -90px,var(--accent-soft),tran
       <select id="fb" aria-label="담당자"></select>
       <span class="cnt" id="cnt"></span>
       <span class="sp"></span>
+      <span class="cnt">이동</span><div class="seg" id="jump" role="group" aria-label="영역으로 이동"><button data-j="1">생산관리</button><button data-j="2">구매</button><button data-j="3">참고</button></div>
       <button class="btn" id="cols" aria-haspopup="true">열 표시</button>
       <button class="btn" id="csv">CSV 저장</button>
       <div class="pop" id="colmenu" hidden></div>
     </div>
+    <div class="hs" id="hs" aria-hidden="true"><div id="hsi"></div></div>
     <div class="tw" id="tw"><table class="g" id="tbl"><thead></thead><tbody></tbody></table></div>
     <p class="note">머리글을 누르면 그 열 기준으로 정렬됩니다(▲ 오름차순 → ▼ 내림차순 → 다시 누르면 No 순). 연한 노란색 칸은 엑셀 원본에서 수정된 값입니다(칸에 마우스를 올리면 수정자·시각·원본이 보입니다). 구매 영역과 생산관리 영역(No·자재번호 제외) 칸을 눌러 바로 고치면 — 계산 열은 엑셀 값 그대로 표시되며 필요하면 직접 고칠 수 있습니다 — 모든 접속자 화면에 실시간 반영됩니다. Enter 저장 · Esc 취소.</p>
   </section>
@@ -424,7 +432,7 @@ function buildHead(){
   $('#tbl thead').innerHTML=r1+'</tr>'+r2+'</tr>'+r3+'</tr>';
   let sc=document.getElementById('stkcss');if(!sc){sc=document.createElement('style');sc.id='stkcss';document.head.appendChild(sc)}
   sc.textContent='@media (min-width:901px){'+Object.keys(stk).map(L=>'.g td[data-l="'+L+'"]{position:sticky;left:'+stk[L]+'px;z-index:2}').join('')+'}@media (max-width:900px){.g th.st{position:sticky;left:auto}}';
-  requestAnimationFrame(measureHead);
+  requestAnimationFrame(()=>{measureHead();window.syncHs&&window.syncHs()});
 }
 function saveHid(){try{localStorage.setItem('ms.hide',JSON.stringify([...HID]))}catch(_){}}
 function colMenu(){
@@ -578,7 +586,7 @@ function fillSelects(){
   const m=$('#me');if(!m.dataset.ok||m.options.length<2){m.innerHTML='<option value="">(선택)</option>'+keys.map(n=>'<option'+(n===ME?' selected':'')+'>'+esc(n)+'</option>').join('');m.dataset.ok=keys.length?'1':''}
   $('#q').value=S.q;
 }
-function measureHead(){const h=$('#tbl thead tr.r2');if(h&&h.offsetHeight)$('#tw').style.setProperty('--r2h',h.getBoundingClientRect().height+'px')}
+function measureHead(){window.syncHs&&window.syncHs();const h=$('#tbl thead tr.r2');if(h&&h.offsetHeight)$('#tw').style.setProperty('--r2h',h.getBoundingClientRect().height+'px')}
 function setTab(t){
   if(S.edit)return;S.tab=t;
   document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t));
@@ -669,6 +677,29 @@ async function connect(){
   render();
 }
 $('#asof').textContent='생산관리(항공생산관리팀) 작성기준일 '+D.asof+' · 자재 '+R.length+'건';
+
+/* 가로 이동: 위쪽 스크롤바 · 끌어서 이동 · 영역 바로가기 */
+(function(){
+  const tw=$('#tw'),hs=$('#hs');
+  const syncW=()=>{$('#hsi').style.width=tw.scrollWidth+'px'};
+  window.syncHs=syncW;
+  tw.addEventListener('scroll',()=>{if(hs.scrollLeft!==tw.scrollLeft)hs.scrollLeft=tw.scrollLeft});
+  hs.addEventListener('scroll',()=>{if(tw.scrollLeft!==hs.scrollLeft)tw.scrollLeft=hs.scrollLeft});
+  window.addEventListener('resize',syncW);
+  let dr=null;
+  tw.addEventListener('mousedown',e=>{if(e.button!==0||e.target.closest('input,textarea,select,th[data-s]'))return;dr={x:e.clientX,y:e.clientY,l:tw.scrollLeft,t:tw.scrollTop,m:0}});
+  window.addEventListener('mousemove',e=>{if(!dr)return;const dx=e.clientX-dr.x,dy=e.clientY-dr.y;
+    if(!dr.m&&Math.abs(dx)+Math.abs(dy)>6){dr.m=1;tw.classList.add('drag');const s=getSelection&&getSelection();if(s)s.removeAllRanges()}
+    if(dr.m){tw.scrollLeft=dr.l-dx;tw.scrollTop=dr.t-dy;e.preventDefault()}});
+  window.addEventListener('mouseup',()=>{if(dr&&dr.m){tw.classList.remove('drag');tw._drag=Date.now()}dr=null});
+  tw.addEventListener('click',e=>{if(tw._drag&&Date.now()-tw._drag<80){e.stopPropagation();e.preventDefault()}},true);
+  document.querySelectorAll('#jump button').forEach(b=>b.onclick=()=>{
+    const g=Number(b.dataset.j),c=CV().find(x=>x[3]===g);if(!c)return;
+    let st=0;if(window.innerWidth>900)['GK','GM','GN'].forEach(L=>{const x=CV().find(y=>y[0]===L);if(x)st+=x[2]});
+    const th=tw.querySelector('th[data-s="'+c[0]+'"]');if(!th)return;
+    tw.scrollTo({left:g===1?0:Math.max(0,th.offsetLeft-st-4),behavior:'smooth'});
+  });
+})();
 colMenu();buildHead();setTab('dash');connect();
 })();
 </script>

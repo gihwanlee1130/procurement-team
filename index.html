@@ -310,6 +310,7 @@ body{background:radial-gradient(900px 320px at 88% -90px,var(--accent-soft),tran
       <button class="btn" id="cols" aria-haspopup="true">열 표시</button>
       <button class="btn" id="imp" title="관리 중인 엑셀을 올리면 STN(구성품목 코드)으로 찾아 값을 갱신합니다">엑셀 업데이트</button><input type="file" id="impf" accept=".xlsx,.xlsm,.xls,.csv" hidden>
       <button class="btn" id="csv">CSV 저장</button>
+      <button class="btn" id="gen" title="지금 화면의 값을 기준값으로 굳힌 새 HTML 파일을 만듭니다">새 HTML 만들기</button>
       <div class="pop" id="colmenu" hidden></div>
     </div>
     <div class="hbar" id="hbar"><button id="hl" aria-label="왼쪽으로 이동" title="왼쪽으로">◀</button><div class="trk" id="trk"><div class="thb" id="thb"></div></div><button id="hr" aria-label="오른쪽으로 이동" title="오른쪽으로">▶</button></div>
@@ -321,6 +322,934 @@ body{background:radial-gradient(900px 320px at 88% -90px,var(--accent-soft),tran
 <div class="impbg" id="impbg" hidden><div class="impd" role="dialog" aria-modal="true" aria-labelledby="impt"><h3 id="impt">엑셀 업데이트</h3><div class="ib" id="impb"></div><div class="ia" id="impa"></div></div></div>
 <div class="toast" id="toast" role="status" hidden></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script type="text/plain" id="src"><!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<\u002Fhead>
+<body>
+<title>매출 결품 관리<\u002Ftitle>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#F1F4F6; --surface:#FFFFFF; --surface-2:#E8EDF1; --line:#C9D1D9; --line-2:#E1E6EB;
+  --ink:#15202A; --ink-2:#465665; --ink-3:#6B7A88;
+  --accent:#0D5B79; --accent-ink:#FFFFFF; --accent-soft:#DAEAF0;
+  --late:#B3271E; --late-soft:#FBE3DF; --soon:#935500; --soon-soft:#FBEACB;
+  --info:#1F5F8B; --info-soft:#DCEAF5; --ok:#1D7550; --ok-soft:#DCEFE5;
+  --edit:#FFF6CC; --stripe:#F8FAFB;
+  --h1:#1F3864; --h2:#2F5597; --h3:#4472C4; --hy:#FFE600; --ho:#FFC000; --hink:#FFFFFF; --hdark:#1B1B1B;
+  --font-body:'IBM Plex Sans KR',system-ui,-apple-system,'Segoe UI','Malgun Gothic',sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F161C; --surface:#18222B; --surface-2:#202C37; --line:#34434F; --line-2:#26333E;
+    --ink:#E7EDF2; --ink-2:#AEBAC5; --ink-3:#8696A4;
+    --accent:#62B8D8; --accent-ink:#06222D; --accent-soft:#1B3441;
+    --late:#F0786D; --late-soft:#3A1E1B; --soon:#E9B15A; --soon-soft:#3A2D14;
+    --info:#7DB6E3; --info-soft:#1A2E40; --ok:#5CC79A; --ok-soft:#143325;
+    --edit:#4A4015; --stripe:#1B2630;
+    --h1:#1F3864; --h2:#2F5597; --h3:#3A5FA8; --hy:#E5CF00; --ho:#E0A800;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F161C; --surface:#18222B; --surface-2:#202C37; --line:#34434F; --line-2:#26333E;
+  --ink:#E7EDF2; --ink-2:#AEBAC5; --ink-3:#8696A4;
+  --accent:#62B8D8; --accent-ink:#06222D; --accent-soft:#1B3441;
+  --late:#F0786D; --late-soft:#3A1E1B; --soon:#E9B15A; --soon-soft:#3A2D14;
+  --info:#7DB6E3; --info-soft:#1A2E40; --ok:#5CC79A; --ok-soft:#143325;
+  --edit:#4A4015; --stripe:#1B2630;
+  --h1:#1F3864; --h2:#2F5597; --h3:#3A5FA8; --hy:#E5CF00; --ho:#E0A800;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:13px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 30px}
+.app{max-width:100%;display:flex;flex-direction:column;gap:12px}
+button,select,input,textarea{font:inherit;color:inherit}
+.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-start;justify-content:space-between}
+.ttl{min-width:0;flex:1 1 320px}
+.ttl h1{margin:0;font-size:22px;letter-spacing:-.01em;text-wrap:balance}
+.ttl .sub{color:var(--ink-3);font-size:12.5px;margin-top:4px}
+.sum{display:flex;gap:10px;flex-wrap:wrap}
+.sum table{border-collapse:collapse;background:var(--surface);font-size:12.5px}
+.sum caption{caption-side:top;text-align:left;font-size:11.5px;color:var(--ink-3);padding-bottom:3px}
+.sum th,.sum td{border:1px solid var(--line);padding:3px 10px;text-align:center}
+.sum th{background:var(--h2);color:var(--hink);font-weight:600}
+.sum td:first-child{font-weight:700;background:var(--surface-2)}
+.sum td.n{font-variant-numeric:tabular-nums}
+.sum tr.t td{font-weight:700;background:var(--surface-2)}
+.sum tr[data-f]{cursor:pointer}.sum tr[data-f]:hover td{background:var(--accent-soft)}
+.sum tr[aria-pressed="true"] td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.bar input[type=search],.bar select{padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);min-width:0}
+.bar input[type=search]{flex:1 1 220px;max-width:340px}
+.bar .sp{flex:1}
+.btn{padding:7px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer;font-weight:600;color:var(--ink-2)}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.cnt{color:var(--ink-3);font-size:12.5px}
+#sync{font-size:12px;color:var(--ink-3);display:inline-flex;align-items:center;gap:6px}
+#sync::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--ink-3)}
+#sync.on::before{background:var(--ok)}#sync.err::before{background:var(--late)}
+.me{font-weight:600}
+.tw{border:1px solid var(--line);border-radius:6px;background:var(--surface);overflow:auto;max-height:calc(100vh - 210px);min-height:320px}
+table.g{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%;font-size:12.5px}
+.g th,.g td{border-right:1px solid var(--line-2);border-bottom:1px solid var(--line-2);padding:4px 6px;vertical-align:middle}
+.g thead th{position:sticky;background:var(--h1);color:var(--hink);font-weight:600;text-align:center;line-height:1.25;z-index:3;border-right:1px solid rgba(255,255,255,.25);border-bottom:1px solid rgba(255,255,255,.25)}
+.g thead tr.r1 th{top:0;height:26px}
+.g thead tr.r2 th{top:26px}
+.g thead tr.r3 th{top:calc(26px + var(--r2h,34px))}
+.g th[data-s]{cursor:pointer;user-select:none}.g th[data-s]:hover{filter:brightness(1.15)}.g th[data-s]:focus-visible{outline:2px solid #fff;outline-offset:-3px}.g th[aria-sort=ascending]::after{content:' ▲';font-size:10px}.g th[aria-sort=descending]::after{content:' ▼';font-size:10px}
+.g th.h2{background:var(--h2)}.g th.h3{background:var(--h3)}
+.g th.hy{background:var(--hy);color:var(--hdark)}.g th.ho{background:var(--ho);color:var(--hdark)}
+.g th.sup{font-size:12.5px;letter-spacing:.02em}
+.g tbody td{background:var(--surface);white-space:pre-line;overflow-wrap:anywhere}
+.g tbody tr:nth-child(even) td{background:var(--stripe)}
+.g tbody tr:hover td{background:var(--accent-soft)}
+.g td.n{text-align:right;font-variant-numeric:tabular-nums}
+.g td.c{text-align:center}
+.g td.neg{color:var(--late);font-weight:600}
+.g td.ed{cursor:text;outline:none}
+.g td.ed:hover{box-shadow:inset 0 0 0 1px var(--accent)}
+.g td.ed:focus-visible{box-shadow:inset 0 0 0 2px var(--accent)}
+.g td.mod{background:var(--edit)!important}
+.g td.mod::after{content:"";position:absolute}
+.g td.sepl,.g th.sepl{border-left:3px solid var(--h2)}
+.g td.cd{font-variant-numeric:tabular-nums}
+.g td.sticky,.g th.sticky{position:sticky;z-index:2}
+.g thead th.sticky{z-index:5}
+.g td.j{padding:2px 4px;text-align:center}
+.g td.j select{appearance:none;border:0;border-radius:999px;padding:2px 8px;font-weight:700;cursor:pointer;text-align:center;width:100%}
+.g td.j .chip{display:inline-block;padding:2px 8px;border-radius:999px;font-weight:700;white-space:nowrap}
+.late{background:var(--late-soft);color:var(--late)}.soon{background:var(--soon-soft);color:var(--soon)}
+.info{background:var(--info-soft);color:var(--info)}.ok{background:var(--ok-soft);color:var(--ok)}
+.g td textarea,.g td input.ci{width:100%;min-width:100%;border:0;outline:2px solid var(--accent);border-radius:2px;background:var(--surface);padding:2px 4px;resize:none;display:block}
+.empty{padding:36px;text-align:center;color:var(--ink-3)}
+.note{font-size:12px;color:var(--ink-3);margin:0}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:max(20px,env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:999px;z-index:90;font-weight:600}
+
+.ctrls{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs button{all:unset;cursor:pointer;padding:9px 16px;font-weight:600;color:var(--ink-2);border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+#vdash{display:flex;flex-direction:column;gap:16px}
+#vlist{display:flex;flex-direction:column;gap:12px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{all:unset;cursor:pointer;padding:7px 14px;font-weight:600;color:var(--ink-2);border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.dh{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+.dh .bl{color:var(--ink-2);font-size:13px}.dh .bl b{color:var(--ink)}
+.kp{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.kc{all:unset;cursor:pointer;background:var(--surface);border:1px solid var(--line);border-left-width:4px;border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kc:focus-visible{outline:2px solid var(--accent)}
+.kc .l{font-size:12.5px;color:var(--ink-2);font-weight:600}
+.kc .n{font-size:30px;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums}
+.kc .s{font-size:12px;color:var(--ink-3)}
+.kc.late{border-left-color:var(--late)}.kc.soon{border-left-color:var(--soon)}.kc.info{border-left-color:var(--info)}.kc.ok{border-left-color:var(--ok)}
+.dl{font-weight:700;font-variant-numeric:tabular-nums}
+.dl.up{color:var(--late)}.dl.dn{color:var(--info)}.dl.z{color:var(--ink-3);font-weight:500}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
+.card h2{margin:0 0 10px;font-size:14px}
+.card h2 small{font-weight:400;color:var(--ink-3);margin-left:8px;font-size:12px}
+.two{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px}
+.ct{width:100%;border-collapse:collapse;font-size:13px}
+.ct th,.ct td{padding:7px 10px;border-bottom:1px solid var(--line-2);text-align:right;white-space:nowrap}
+.ct th{background:var(--h2);color:var(--hink);font-weight:600;text-align:center;border-bottom:0}
+.ct th.g2{background:var(--h1)}
+.ct td:first-child,.ct th:first-child{text-align:left}
+.ct td:first-child{font-weight:700}
+.ct tr.t td{background:var(--surface-2);font-weight:700}
+.ct td.n{font-variant-numeric:tabular-nums}
+.ctw{overflow-x:auto}
+.ct tbody tr[data-c],.ct tbody tr[data-f]{cursor:pointer}.ct tbody tr[data-c]:hover td,.ct tbody tr[data-f]:hover td{background:var(--accent-soft)}
+.chip{display:inline-block;padding:2px 9px;border-radius:999px;font-weight:700;font-size:12px;white-space:nowrap}
+.ct td.l{text-align:left;white-space:normal}
+.cs{color:var(--ink-3)}
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--ink-2);font-size:11px;font-family:var(--font-body)}
+.chart .v{fill:var(--on);font-weight:700;font-size:10.5px}
+.chart .cur{fill:var(--ink);font-weight:700}
+.lg{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--ink-2);margin-top:6px}
+.lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+@media (max-width:900px){.kp{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:minmax(0,1fr)}}
+
+/* ── 디자인 개선 ── */
+:root{--on:#FFFFFF}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--on:#0F161C}}
+:root[data-theme="dark"]{--on:#0F161C}
+:root{--sh:0 1px 2px rgba(16,32,48,.06),0 8px 24px rgba(16,32,48,.06)}
+body{background:radial-gradient(900px 320px at 88% -90px,var(--accent-soft),transparent 72%),var(--bg)}
+.top{padding-bottom:4px}
+.ttl .eyebrow{display:flex;align-items:center;gap:10px;font-size:11px;letter-spacing:.18em;font-weight:700;color:var(--accent);margin-bottom:6px}
+.ttl .eyebrow::before{content:"";width:26px;height:3px;border-radius:2px;background:var(--accent)}
+.ttl h1{font-size:27px;font-weight:700;letter-spacing:-.025em;line-height:1.2}
+.ttl .sub{font-size:12.5px;margin-top:6px}
+.ctrls{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 8px 5px 14px;box-shadow:var(--sh)}
+.ctrls .me{border:0;background:var(--surface-2);border-radius:999px;padding:4px 10px}
+#sync{padding:0 6px}
+.tabs{border-bottom:0;gap:8px;overflow-x:auto;padding-bottom:2px}
+.tabs button{padding:8px 20px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink-2);box-shadow:var(--sh)}
+.tabs button:hover{border-color:var(--accent);color:var(--accent)}
+.tabs button[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.card{border-radius:16px;box-shadow:var(--sh);padding:18px}
+.card h2{font-size:15px;letter-spacing:-.01em}
+.seg{border-radius:999px;box-shadow:var(--sh)}
+.seg button{padding:8px 18px}
+.kc{border-radius:16px;box-shadow:var(--sh);border:1px solid var(--line);border-top-width:5px;padding:14px 16px 14px;gap:4px}
+.kc.late{border-top-color:var(--late)}.kc.soon{border-top-color:var(--soon)}.kc.info{border-top-color:var(--info)}.kc.ok{border-top-color:var(--ok)}
+.kc:hover{transform:translateY(-1px)}
+.kc .n{font-size:34px;letter-spacing:-.02em}
+.kc .n small{font-size:12.5px;font-weight:600;color:var(--ink-3);margin-left:8px;letter-spacing:0}
+.kc .pr{display:block;height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin:4px 0 2px}
+.kc .pr i{display:block;height:100%;border-radius:99px}
+.kc.late .pr i{background:var(--late)}.kc.soon .pr i{background:var(--soon)}.kc.info .pr i{background:var(--info)}.kc.ok .pr i{background:var(--ok)}
+.ov{padding:16px 18px}
+.ov .ovh{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 16px;align-items:baseline;margin-bottom:10px}
+.ov .ovh b{font-size:15px}.ov .ovh span{font-size:12.5px;color:var(--ink-2)}
+.stk{display:flex;height:26px;border-radius:99px;overflow:hidden;background:var(--surface-2);gap:2px}
+.stk i{display:flex;align-items:center;justify-content:center;color:var(--on);font-style:normal;font-weight:700;font-size:12px;min-width:0}
+.ct tbody tr:last-child td{border-bottom:0}
+#vlist .bar{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:8px 12px;box-shadow:var(--sh)}
+.bar input[type=search]:focus,.bar select:focus{outline:2px solid var(--accent);outline-offset:0}
+.tw{border-radius:16px;box-shadow:var(--sh);border-color:var(--line)}
+.g thead th{font-weight:600;letter-spacing:-.005em}
+.g tbody td{border-bottom-color:var(--line-2)}
+.g td[data-l=GN]{box-shadow:3px 0 5px -3px rgba(16,32,48,.25)}
+.g td.mod{box-shadow:inset 0 0 0 1px var(--soon)}
+.g td.ed:hover{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.g td.j select{font-size:12px}
+.note{padding:0 4px;line-height:1.6}
+.toast{box-shadow:var(--sh)}
+
+/* ── 행 디자인 ── */
+.g tbody td{padding:10px 10px;border-right:1px solid transparent;border-bottom:1px solid var(--line-2);line-height:1.4}
+.g tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--surface-2) 38%,var(--surface))}
+.g tbody tr:hover td{background:color-mix(in srgb,var(--accent-soft) 85%,var(--surface))}
+.g tbody td[data-l=GK]{color:var(--ink-3);font-size:12px;text-align:center;font-weight:600}
+.g tbody td[data-l=GM]{font-size:12px;color:var(--ink-2);white-space:nowrap;font-variant-numeric:tabular-nums}
+.g tbody td[data-l=GN]{font-weight:600;color:var(--ink)}
+.g tbody td[data-l=GO]{color:var(--ink-2);font-size:12px}
+.g tbody td.zero{color:var(--line)}
+.g tbody td.neg{color:var(--late);font-weight:700}
+.g tbody td[data-l=GY].neg::before{content:"▼ ";font-size:9px;opacity:.7}
+.g tbody td.c{color:var(--ink-2);font-size:12px}
+.g tbody td[data-l=HP],.g tbody td[data-l=HQ],.g tbody td[data-l=HR],.g tbody td[data-l=HS]{font-size:11.5px;line-height:1.5;color:var(--ink-2)}
+.g tbody td[data-l=HZ],.g tbody td[data-l=IA],.g tbody td[data-l=IP]{color:var(--ink-2);font-size:12px;line-height:1.5}
+.g tbody td[data-l=HL],.g tbody td[data-l=HK]{font-weight:600}
+.g tbody td.ed:hover{background:var(--accent-soft)}
+.g tbody td.j select{padding:4px 10px;font-size:12px;letter-spacing:-.01em}
+.g tbody tr[data-j="입고불가"] td[data-l=GK]{box-shadow:inset 5px 0 0 var(--late)}
+.g tbody tr[data-j="급행요청"] td[data-l=GK]{box-shadow:inset 5px 0 0 var(--soon)}
+.g tbody tr[data-j="입고가능"] td[data-l=GK]{box-shadow:inset 5px 0 0 var(--info)}
+.g tbody tr[data-j="입고완료"] td[data-l=GK]{box-shadow:inset 5px 0 0 var(--ok)}
+.g tbody tr[data-j="입고완료"] td:not(.j):not([data-l=GK]){color:var(--ink-3)}
+.g tbody tr[data-j="입고완료"] td[data-l=GN]{color:var(--ink-2);font-weight:500}
+
+.bar{position:relative}
+.pop{position:absolute;right:12px;top:calc(100% + 6px);z-index:30;width:min(340px,calc(100vw - 32px));max-height:min(70vh,520px);overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(16,32,48,.22);padding:12px 14px}
+.pophd{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.lnk{all:unset;cursor:pointer;color:var(--accent);font-weight:600;font-size:12.5px}.lnk:hover{text-decoration:underline}
+.popg{font-size:11.5px;font-weight:700;color:var(--ink-3);letter-spacing:.04em;margin:10px 0 4px}
+.popl{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px}
+.popl label{display:flex;gap:6px;align-items:center;padding:3px 0;font-size:12.5px;cursor:pointer}
+:root{--p1:#0E7C86;--p1s:#E3F4F5;--p2:#7A4FBF;--p2s:#EFE8FA}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--p1:#168C97;--p1s:#14383B;--p2:#8A5FCE;--p2s:#2A2142}}
+:root[data-theme="dark"]{--p1:#168C97;--p1s:#14383B;--p2:#8A5FCE;--p2s:#2A2142}
+.g th.p1{background:var(--p1)}.g th.p2{background:var(--p2)}
+.g tbody td.p1,.g tbody tr:nth-child(even) td.p1{background:var(--p1s)}
+.g tbody td.p2,.g tbody tr:nth-child(even) td.p2{background:var(--p2s)}
+.g tbody tr:hover td.p1{background:color-mix(in srgb,var(--p1) 22%,var(--p1s))}
+.g tbody tr:hover td.p2{background:color-mix(in srgb,var(--p2) 22%,var(--p2s))}
+.g td.pb,.g th.pb{border-left:2px solid var(--line)}
+.g tbody td.p1.mod,.g tbody td.p2.mod{background:var(--edit)}
+
+.hs{overflow-x:auto;overflow-y:hidden;height:16px;margin-bottom:-8px}
+.hs div{height:1px}
+.tw.drag{cursor:grabbing;user-select:none}
+.tw.drag td{cursor:grabbing!important}
+#jump button{padding:6px 12px;font-size:12.5px}
+
+.hbar{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 8px;box-shadow:var(--sh)}
+.hbar button{all:unset;cursor:pointer;width:30px;height:24px;display:grid;place-items:center;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-size:11px;font-weight:700;user-select:none}
+.hbar button:hover{filter:brightness(1.12)}.hbar button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.trk{position:relative;flex:1;height:14px;border-radius:999px;background:var(--surface-2);cursor:pointer}
+.thb{position:absolute;top:0;left:0;height:100%;min-width:44px;border-radius:999px;background:var(--accent);opacity:.85;cursor:grab;touch-action:none}
+.thb:hover{opacity:1}.thb.on{cursor:grabbing;opacity:1}
+.twrap{position:relative}
+.fab{all:unset;cursor:pointer;position:absolute;top:50%;z-index:6;width:40px;height:56px;margin-top:-28px;display:grid;place-items:center;border-radius:12px;background:var(--accent);color:var(--accent-ink);font-size:16px;font-weight:700;opacity:.88;box-shadow:0 4px 14px rgba(16,32,48,.3);user-select:none}
+.fab:hover{opacity:1}.fab:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.fab.r{right:10px}.fab.l{left:10px}
+.fab[hidden]{display:none!important}
+@media (max-width:900px){.tw{max-height:calc(100vh - 260px)}}
+
+.impbg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:80;display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.impd{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh);width:min(760px,100%);max-height:100%;display:flex;flex-direction:column;min-width:0}
+.impd h3{margin:0;padding:16px 18px 6px;font-size:16px}
+.impd .ib{padding:6px 18px 12px;overflow:auto;min-width:0;display:flex;flex-direction:column;gap:12px}
+.impd .is{color:var(--ink-2);line-height:1.6}
+.impd .ic{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px}
+.impd .ic label{display:flex;gap:8px;align-items:center;padding:6px 8px;border:1px solid var(--line);border-radius:8px;cursor:pointer}
+.impd .ic b{margin-left:auto;font-variant-numeric:tabular-nums}
+.impd .il{border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:240px}
+.impd table{border-collapse:collapse;width:100%}
+.impd td,.impd th{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.impd .ia{display:flex;gap:8px;justify-content:flex-end;padding:12px 18px;border-top:1px solid var(--line);flex-wrap:wrap}
+.impd .pri{background:var(--accent);color:var(--on,#fff);border-color:var(--accent)}
+.impd .pri:disabled{opacity:.45;cursor:default}
+<\u002Fstyle>
+<div class="app" id="app">
+  <div class="top">
+    <div class="ttl">
+      <div class="eyebrow">AEROSPACE PROCUREMENT · 항공우주구매팀<\u002Fdiv>
+      <h1>2026년 매출 달성을 위한 (예상)결품<\u002Fh1>
+      <div class="sub" id="asof"><\u002Fdiv>
+    <\u002Fdiv>
+    <div class="ctrls">
+      <label class="cnt" for="me">수정자<\u002Flabel><select id="me" class="me" aria-label="내 이름"><\u002Fselect>
+      <span id="sync">연결 중…<\u002Fspan>
+    <\u002Fdiv>
+  <\u002Fdiv>
+  <div class="tabs" role="tablist" id="tabs">
+    <button role="tab" data-t="dash" aria-selected="true">대시보드<\u002Fbutton>
+    <button role="tab" data-t="list" aria-selected="false">결품 자재 목록<\u002Fbutton>
+  <\u002Fdiv>
+  <section id="vdash"><\u002Fsection>
+  <section id="vlist" hidden>
+    <div class="bar">
+      <input type="search" id="q" placeholder="자재번호·내역·MPN·업체·PO 검색" aria-label="검색">
+      <select id="fj" aria-label="판정"><\u002Fselect>
+      <select id="fb" aria-label="담당자"><\u002Fselect>
+      <span class="cnt" id="cnt"><\u002Fspan>
+      <span class="sp"><\u002Fspan>
+      <span class="cnt">이동<\u002Fspan><div class="seg" id="jump" role="group" aria-label="영역으로 이동"><button data-j="1">생산관리<\u002Fbutton><button data-j="2">구매<\u002Fbutton><button data-j="3">참고<\u002Fbutton><\u002Fdiv>
+      <button class="btn" id="cols" aria-haspopup="true">열 표시<\u002Fbutton>
+      <button class="btn" id="imp" title="관리 중인 엑셀을 올리면 STN(구성품목 코드)으로 찾아 값을 갱신합니다">엑셀 업데이트<\u002Fbutton><input type="file" id="impf" accept=".xlsx,.xlsm,.xls,.csv" hidden>
+      <button class="btn" id="csv">CSV 저장<\u002Fbutton>
+      <button class="btn" id="gen" title="지금 화면의 값을 기준값으로 굳힌 새 HTML 파일을 만듭니다">새 HTML 만들기<\u002Fbutton>
+      <div class="pop" id="colmenu" hidden><\u002Fdiv>
+    <\u002Fdiv>
+    <div class="hbar" id="hbar"><button id="hl" aria-label="왼쪽으로 이동" title="왼쪽으로">◀<\u002Fbutton><div class="trk" id="trk"><div class="thb" id="thb"><\u002Fdiv><\u002Fdiv><button id="hr" aria-label="오른쪽으로 이동" title="오른쪽으로">▶<\u002Fbutton><\u002Fdiv>
+    <div class="twrap"><button class="fab l" id="fl" aria-label="왼쪽으로 이동" hidden>◀<\u002Fbutton><button class="fab r" id="fr" aria-label="오른쪽으로 이동">▶<\u002Fbutton>
+    <div class="tw" id="tw"><table class="g" id="tbl"><thead><\u002Fthead><tbody><\u002Ftbody><\u002Ftable><\u002Fdiv><\u002Fdiv>
+    <p class="note">머리글을 누르면 그 열 기준으로 정렬됩니다(▲ 오름차순 → ▼ 내림차순 → 다시 누르면 No 순). 연한 노란색 칸은 엑셀 원본에서 수정된 값입니다(칸에 마우스를 올리면 수정자·시각·원본이 보입니다). 구매 영역과 생산관리 영역(No·자재번호 제외) 칸을 눌러 바로 고치면 — 계산 열은 엑셀 값 그대로 표시되며 필요하면 직접 고칠 수 있습니다 — 모든 접속자 화면에 실시간 반영됩니다. Enter 저장 · Esc 취소.<\u002Fp>
+  <\u002Fsection>
+<\u002Fdiv>
+<div class="impbg" id="impbg" hidden><div class="impd" role="dialog" aria-modal="true" aria-labelledby="impt"><h3 id="impt">엑셀 업데이트<\u002Fh3><div class="ib" id="impb"><\u002Fdiv><div class="ia" id="impa"><\u002Fdiv><\u002Fdiv><\u002Fdiv>
+<div class="toast" id="toast" role="status" hidden><\u002Fdiv>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\u002Fscript>
+<script type="text/plain" id="src">/*SRC*/<\u002Fscript>
+<script type="application/json" id="data">/*DATA*/<\u002Fscript>
+<script>
+/* ▼ 여기 두 줄만 채우세요 (설치_방법.md 참고) */
+window.GS_URL="https://script.google.com/macros/s/AKfycbxh6qmY3SeKMQPIuryXUvczQBAE8-HPsK2RCPcJJJHxHS1xxRH4xXif5fUM_nuhs0Dd/exec";
+window.GS_KEY="joshualeejoshualee12051205";
+<\u002Fscript>
+<script>
+/* 구글 시트 저장소 연결 (Apps Script 웹앱). 아래 두 값만 채우면 됩니다. */
+(function(){
+  const GS_URL=window.GS_URL||'';   // 예: https://script.google.com/macros/s/XXXX/exec
+  const GS_KEY=window.GS_KEY||'';   // Code.gs 의 KEY 와 같은 값
+  const POLL=window.GS_POLL||8000;
+  if(!GS_URL||!GS_KEY){console.warn('GS_URL/GS_KEY 가 비어 있어 조회 전용으로 열립니다.');return}
+  const PEOPLE=['이준영','박형식','조재완','이주희','김혜린','김형수','김태희','김소현','신승희','이민정','김지은'];
+  const cache=new Map(),subs=[];let since=0,ready=false,failed=0;
+  function lg(k){try{return localStorage.getItem(k)}catch(e){return null}}
+  function ls(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  function snap(c){
+    const docs=[];cache.forEach((v,k)=>{if(k.indexOf(c+'/')===0)docs.push({id:k.slice(c.length+1),exists:true,data:()=>JSON.parse(JSON.stringify(v))})});
+    return {docs:docs,size:docs.length,empty:!docs.length};
+  }
+  function fire(){subs.forEach(s=>{try{s[1](snap(s[0]))}catch(e){console.error(e)}})}
+  async function call(method,body){
+    const url=GS_URL+(method==='GET'?'?key='+encodeURIComponent(GS_KEY)+'&since='+since:'');
+    const r=await fetch(url,method==='GET'?{}:{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({key:GS_KEY},body))});
+    const j=await r.json();if(!j.ok)throw new Error(j.error||'서버 오류');return j;
+  }
+  async function pull(){
+    try{
+      const j=await call('GET');
+      let ch=false;
+      (j.docs||[]).forEach(d=>{
+        const k=d.c+'/'+d.id;
+        if(d.d===''||d.d==null){if(cache.delete(k))ch=true}
+        else{const v=JSON.parse(d.d);if(JSON.stringify(cache.get(k))!==d.d){cache.set(k,v);ch=true}}
+        if(d.u>since)since=d.u;
+      });
+      if(j.now&&!since)since=j.now;
+      failed=0;
+      if(ch||!ready){ready=true;fire()}
+    }catch(e){failed++;if(!ready&&failed>=2){subs.forEach(s=>{try{s[2]&&s[2](e)}catch(_){}})}}
+  }
+  setInterval(()=>{if(!document.hidden)pull()},POLL);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});
+  const db={
+    collection(c){return {onSnapshot(next,err){subs.push([c,next,err]);if(ready)setTimeout(()=>next(snap(c)),0);else if(subs.length===1)pull();return ()=>{}}}},
+    doc(p){const i=p.indexOf('/'),c=p.slice(0,i),id=p.slice(i+1);return {
+      async set(d){await call('POST',{op:'set',c:c,id:id,d:JSON.stringify(d),by:lg('nb.me')||''});cache.set(p,JSON.parse(JSON.stringify(d)));fire()},
+      async delete(){await call('POST',{op:'del',c:c,id:id,by:lg('nb.me')||''});cache.delete(p);fire()}}}
+  };
+  async function askName(){
+    return new Promise(res=>{
+      const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:inherit';
+      o.innerHTML='<form style="background:#fff;color:#1b2430;padding:22px;border-radius:12px;width:min(360px,92vw);box-shadow:0 10px 40px rgba(0,0,0,.3)"><h3 style="margin:0 0 6px;font-size:16px">이름을 선택하세요<\u002Fh3><p style="margin:0 0 12px;font-size:12px;color:#5a6676">입력 기록과 업무 지시에 이 이름이 남습니다. 목록에 없으면 직접 적으세요.<\u002Fp><input list="nbp" required style="width:100%;box-sizing:border-box;padding:9px;font-size:14px;border:1px solid #b8c2cf;border-radius:8px" placeholder="이름"><datalist id="nbp">'+PEOPLE.map(p=>'<option value="'+p+'">').join('')+'<\u002Fdatalist><button style="margin-top:14px;width:100%;padding:10px;font-size:14px;border:0;border-radius:8px;background:#124e66;color:#fff;cursor:pointer">시작<\u002Fbutton><\u002Fform>';
+      document.body.appendChild(o);
+      o.querySelector('form').onsubmit=e=>{e.preventDefault();const v=o.querySelector('input').value.trim();if(v){ls('nb.me',v);o.remove();res(v)}};
+    });
+  }
+  const user={async me(){let n=lg('nb.me');if(!n){if(document.readyState==='loading')await new Promise(r=>document.addEventListener('DOMContentLoaded',r));n=await askName()}return {name:n,id:n}},async can(){return true},async id(){return lg('nb.me')||''}};
+  const dl={async save(x){const b=new Blob([x.data],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=x.filename||'download.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);return {status:'saved'}}};
+  window.claude={use:async n=>({db:db,user:user,downloads:dl})[n]||null};
+})();
+
+<\u002Fscript>
+
+<script>
+(function(){'use strict';
+const D=JSON.parse(document.getElementById('data').textContent);
+const $=(s,r)=>(r||document).querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const br=s=>esc(s).replace(/\n/g,'<br>');
+const J=['입고불가','급행요청','입고가능','입고완료'],JC={'입고불가':'late','급행요청':'soon','입고가능':'info','입고완료':'ok'};
+/* [열, 제목, 폭, 구분(1=생산 2=구매 3=참고), 수정가능, 헤더색] */
+const C0=[
+['GK','No',38,1],['GL','Seq',46,1],['GM','구성품목 코드',118,1],['GN','구성품목 내역',210,1],['GO','MPN',130,1],['GP','UM',40,1],
+['GQ','기투입\n결품',58,1],['GR','미투입\n소요량',64,1],['GS','소요량\nTotal',64,1],
+['GT','1120',66,1,0,'원부자재\n(해외)'],['GU','2120',66,1,0,'생산현장\n(해외)'],['GV','1400',66,1,0,'선발주\n창고'],['GW','1500',66,1,0,'수입\n검사'],
+['GX','가용\nTotal',58,1],['GY','과부족\nTotal',64,1,0,'',' ho'],
+['HA','S',38,1,0,'',' ',3,'납이도'],['HB','M',38,1],['HC','C',38,1],['HD','10',42,1,0,'',' ',3,'월별 소요량'],['HE','11',42,1],['HF','12',42,1],
+['HG','End date\n(자재요구일)',100,1],['HH','비고',76,1],
+['HJ','2026\n매출판정',104,2,1],['HK','담당자',86,2,1],['HL','업체명',150,2,1],['HM','PR\n등록일',92,2,1],['HN','입고\n수량',62,2,1],['HO','입고\n일자',92,2,1],
+['HP','PO\n번호',150,2,1],['HQ','PO\n발주 수량',80,2,1],['HR','PO\n발행일',92,2,1],['HS','PO\n납기일',92,2,1],['HT','요청 일자',92,2,1],['HU','필요\n수량',64,2,1],
+['HV','1차\n입고일',92,2,1],['HW','1차\n입고수량',76,2,1],['HX','2차\n입고일',92,2,1],['HY','2차\n입고수량',76,2,1],['HZ','비고',300,2,1],['IA','구매요청 번호 · 상태',230,2,1],
+['IB','가용\n창고',60,3],['IC','해외생산\n창고',72,3],['ID','수검\n창고',60,3],['IE','부적합\n창고\n1300',68,3],['IF','부적합\n창고\n1310',68,3],
+['IG','가용\ntotal',60,3,0,'','h2'],['IH','소요량',62,3,0,'','h2'],['II','필요수량',66,3,0,'','h2'],
+['IJ','Today\n(a)',92,3,0,'','hy'],['IK','(a)-(b)',60,3,0,'','hy'],['IL','Target date\n(Ship out)',100,3,0,'','hy'],['IM','End date\n(GR)',96,3,0,'','hy'],
+['IN','분할\n건수',56,3,0,'','h3'],['IO','평균\nL/T(W)',66,3,0,'','h3'],['IP','L/T 근거',270,3,0,'','h3'],['IQ','지금 발주 시\n예상 입고',112,3,0,'','h3']
+];
+const C=C0.filter(c=>c[0]!=='GL');C.forEach(c=>{if(c[3]===1&&c[0]!=='GK'&&c[0]!=='GM')c[4]=1});
+const IX={};D.cols.forEach((L,i)=>IX[L]=i);
+const TEXTAREA={HL:1,HP:1,HZ:1,IA:1};
+const CENTER={GK:1,GL:1,GP:1,HM:1,HO:1,HR:1,HS:1,HT:1,HV:1,HX:1,IJ:1,IL:1,IM:1,IQ:1,HG:1};
+const S={sort:{L:'GK',d:1},tab:'dash',mode:'day',pickD:'',hs:{},ready:false,hsReady:false,f:'all',b:'all',q:'',ov:{},RO:true,edit:null,dirty:false};
+try{S.mode=localStorage.getItem('ms.mode')||'day'}catch(_){}
+const R=D.rows.map(r=>({c:r[IX.GM],v:r}));
+const byC={};R.forEach(r=>byC[r.c]=r);
+const COLL=D.coll||'ms2';
+const pend={};let dbc=null,cl=null,ME='';
+try{ME=localStorage.getItem('ms.me')||''}catch(_){}
+const me=()=>ME||'익명';
+const pad=n=>String(n).padStart(2,'0');
+const TODAY=(d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()))(new Date());
+const names=s=>String(s||'').split(/[\n\/,]+/).map(x=>x.trim()).filter(Boolean);
+const key=c=>c.replace(/[\/\s#?\\]/g,'_');
+const canEdit=()=>!!dbc&&!S.RO;
+function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2200)}
+function val(r,L){const o=S.ov[r.c];return o&&o.f&&L in o.f?o.f[L]:r.v[IX[L]]}
+function numeric(s){return /^-?[\d,]+(\.\d+)?$/.test(String(s).trim())}
+/* 헤더 */
+let HID=new Set(),hidPend=0;
+const CV=()=>C.filter(c=>!HID.has(c[0]));
+const GRP={HA:'납이도',HB:'납이도',HC:'납이도',HD:'월별 소요량',HE:'월별 소요량',HF:'월별 소요량'};
+const PCLS={HV:'p1',HW:'p1',HX:'p2',HY:'p2'};
+function buildHead(){
+  const V=CV();
+  let r1='<tr class="r1">',r2='<tr class="r2">',r3='<tr class="r3">';
+  const g1=V.filter(c=>c[3]===1).length,g2=V.filter(c=>c[3]===2).length,g3=V.filter(c=>c[3]===3).length;
+  if(g1)r1+='<th class="sup" colspan="'+g1+'" style="text-align:left">항공생산관리팀<span style="font-weight:400;margin-left:14px">작성기준일 : '+esc(D.asof)+'<\u002Fspan><\u002Fth>';
+  if(g2)r1+='<th class="sup h2'+(g1?' sepl':'')+'" colspan="'+g2+'">항공우주구매팀<\u002Fth>';
+  if(g3)r1+='<th class="sup h3" colspan="'+g3+'">참고 (재고 · L/T)<\u002Fth>';
+  r1+='<\u002Ftr>';
+  const stk={};let left=0;
+  ['GK','GM','GN'].forEach(L=>{const c=V.find(x=>x[0]===L);if(c){stk[L]=left;left+=c[2]}});
+  const seenG={};
+  V.forEach(c=>{
+    const L=c[0],lab=c[1],extra=c[6]||'';
+    let cls=(c[3]===2?'h2':c[3]===3?'h3':'');
+    if(extra.trim())cls=extra.trim();
+    if(PCLS[L])cls=PCLS[L];
+    if(c[3]===2&&L==='HJ')cls+=' sepl';
+    const w='style="min-width:'+c[2]+'px;width:'+c[2]+'px'+(L in stk?';left:'+stk[L]+'px':'')+'"';
+    const sk=(L in stk)?' sticky st':'';
+    const hd='data-s="'+L+'" tabindex="0" ';
+    if(GRP[L]){
+      const g=GRP[L];
+      if(!seenG[g]){seenG[g]=1;const n=V.filter(x=>GRP[x[0]]===g).length;r2+='<th class="'+cls+'" colspan="'+n+'">'+esc(g)+'<\u002Fth>'}
+      r3+='<th class="'+cls+'" '+hd+w+'>'+esc(lab)+'<\u002Fth>';return}
+    if(c[5]){r2+='<th class="'+cls+'" '+hd+w+'>'+esc(lab)+'<\u002Fth>';r3+='<th class="'+cls+'">'+br(c[5])+'<\u002Fth>';return}
+    r2+='<th class="'+cls+sk+'" '+hd+'rowspan="2" '+w+'>'+br(lab)+'<\u002Fth>';
+  });
+  $('#tbl thead').innerHTML=r1+'<\u002Ftr>'+r2+'<\u002Ftr>'+r3+'<\u002Ftr>';
+  let sc=document.getElementById('stkcss');if(!sc){sc=document.createElement('style');sc.id='stkcss';document.head.appendChild(sc)}
+  sc.textContent='@media (min-width:901px){'+Object.keys(stk).map(L=>'.g td[data-l="'+L+'"]{position:sticky;left:'+stk[L]+'px;z-index:2}').join('')+'}@media (max-width:900px){.g th.st{position:sticky;left:auto}}';
+  requestAnimationFrame(()=>{measureHead();window.syncHs&&window.syncHs()});
+}
+function saveHid(){hidPend=Date.now();if(!dbc){toast('저장소에 연결된 뒤에 바꿀 수 있습니다.');return}dbc.doc('ms2c/hide').set({k:'hide',h:[...HID],by:me(),t:Date.now()}).catch(()=>toast('열 표시 저장에 실패했습니다.'))}
+function colMenu(){
+  const G=[['항공생산관리팀',1],['항공우주구매팀',2],['참고 (재고 · L/T)',3]];
+  let h='<div class="pophd"><b>표시할 열<\u002Fb><span><button class="lnk" id="cm-all">모두 표시<\u002Fbutton><\u002Fspan><\u002Fdiv>';
+  G.forEach(g=>{h+='<div class="popg">'+g[0]+'<\u002Fdiv><div class="popl">'+C.filter(c=>c[3]===g[1]).map(c=>{
+    const nm=(c[1]+(c[5]?' '+c[5].replace(/\n/g,''):'')).replace(/\n/g,' ');
+    return '<label><input type="checkbox" data-cm="'+c[0]+'"'+(HID.has(c[0])?'':' checked')+'> '+esc(nm)+'<\u002Flabel>'}).join('')+'<\u002Fdiv>'});
+  const m=$('#colmenu');m.innerHTML=h;
+  $('#cols').textContent='열 표시'+(HID.size?' ('+HID.size+'개 숨김)':'');
+  m.querySelectorAll('[data-cm]').forEach(x=>x.onchange=()=>{if(x.checked)HID.delete(x.dataset.cm);else HID.add(x.dataset.cm);saveHid();buildHead();renderBody();colMenu()});
+  $('#cm-all').onclick=()=>{HID.clear();saveHid();buildHead();renderBody();colMenu()};
+}
+/* 본문 */
+function visible(){
+  const q=S.q.toLowerCase();
+  return R.filter(r=>{
+    if(S.f!=='all'&&val(r,'HJ')!==S.f)return false;
+    if(S.b!=='all'&&!names(val(r,'HK')).includes(S.b))return false;
+    if(q&&![r.v[IX.GM],r.v[IX.GN],r.v[IX.GO],val(r,'HL'),val(r,'HP'),val(r,'HK')].join(' ').toLowerCase().includes(q))return false;
+    return true;
+  }).sort(cmpRows);
+}
+function cmpRows(a,b){
+  const L=S.sort.L,d=S.sort.d;let x=val(a,L),y=val(b,L);
+  const ex=x===''||x==null,ey=y===''||y==null;
+  if(ex!==ey)return ex?1:-1;
+  let r=0;
+  if(L==='HJ'){const o=['급행요청','입고가능','입고불가','입고완료'];r=(o.indexOf(x)+1||9)-(o.indexOf(y)+1||9)}
+  else if(!ex&&numeric(x)&&numeric(y))r=Number(String(x).replace(/,/g,''))-Number(String(y).replace(/,/g,''));
+  else r=String(x).localeCompare(String(y),'ko',{numeric:true});
+  if(r)return r*d;
+  return Number(a.v[IX.GK])-Number(b.v[IX.GK]);
+}
+function cell(r,c){
+  const L=c[0],v=val(r,L),o=S.ov[r.c],mod=o&&o.f&&L in o.f;
+  let cls=[];
+  if(c[3]===2&&L==='HJ')cls.push('sepl');
+  if(c[4])cls.push('ed');
+  if(PCLS[L])cls.push(PCLS[L]);if(L==='HV'||L==='HX')cls.push('pb');
+  if(mod)cls.push('mod');
+  let inner;
+  if(L==='HJ'){
+    cls.push('j');
+    if(canEdit()){const k=JC[v]||'';inner='<select class="'+k+'" data-sel="'+esc(r.c)+'" aria-label="판정">'+['',...J].map(x=>'<option'+(x===v?' selected':'')+'>'+x+'<\u002Foption>').join('')+'<\u002Fselect>'}
+    else inner=v?'<span class="chip '+(JC[v]||'')+'">'+esc(v)+'<\u002Fspan>':'';
+  }else{
+    if(numeric(v)&&!CENTER[L]&&!(c[4]&&['HP','HL','HZ','IA','HK'].includes(L))){cls.push('n');if(Number(String(v).replace(/,/g,''))===0)cls.push('zero');if(['GY','II','HU'].includes(L)&&Number(String(v).replace(/,/g,''))<0)cls.push('neg')}
+    else if(CENTER[L])cls.push('c');
+    inner=esc(v);
+  }
+  let t='';
+  if(mod){const m=o.m&&o.m[L];t=' title="'+esc('엑셀 원본: '+(r.v[IX[L]]||'(비어 있음)')+(m?' · 수정 '+m.by+' '+new Date(m.t).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):''))+'"'}
+  const ta=c[4]&&L!=='HJ'?' tabindex="0" role="textbox"':'';
+  return '<td class="'+cls.join(' ')+'" data-l="'+L+'"'+ta+t+'>'+inner+'<\u002Ftd>';
+}
+function renderBody(){
+  const V=visible();
+  document.querySelectorAll('#tbl th[data-s]').forEach(h=>{if(h.dataset.s===S.sort.L&&!(S.sort.L==='GK'&&S.sort.d===1))h.setAttribute('aria-sort',S.sort.d>0?'ascending':'descending');else h.removeAttribute('aria-sort')});
+  $('#cnt').textContent=V.length+' / '+R.length+'건';
+  $('#tbl tbody').innerHTML=V.length?V.map(r=>'<tr data-c="'+esc(r.c)+'" data-j="'+esc(val(r,'HJ'))+'">'+CV().map(c=>cell(r,c)).join('')+'<\u002Ftr>').join(''):'<tr><td class="empty" colspan="'+CV().length+'">조건에 맞는 자재가 없습니다.<\u002Ftd><\u002Ftr>';
+}
+const ORD=['급행요청','입고가능','입고불가','입고완료'],FILL={'입고불가':'--late','급행요청':'--soon','입고가능':'--info','입고완료':'--ok'};
+const WD=['일','월','화','수','목','금','토'];
+const md=d=>{const x=new Date(d+'T00:00:00');return (x.getMonth()+1)+'/'+x.getDate()+'('+WD[x.getDay()]+')'};
+const addD=(d,n)=>{const x=new Date(d+'T00:00:00');x.setDate(x.getDate()+n);return x.getFullYear()+'-'+pad(x.getMonth()+1)+'-'+pad(x.getDate())};
+function stateOf(getJ){
+  const c={},b={},m={};ORD.forEach(j=>c[j]=0);
+  R.forEach(r=>{const j=getJ(r);if(c[j]!=null)c[j]++;if(ORD.includes(j))m[r.c]=ORD.indexOf(j);
+    names(S.curBuyer(r)).forEach(n=>{const o=b[n]=b[n]||{};o[j]=(o[j]||0)+1})});
+  return {c:c,b:b,m:m};
+}
+S.curBuyer=r=>val(r,'HK');
+const liveState=()=>stateOf(r=>val(r,'HJ'));
+function seeds(){
+  const o=D.seed05||stateOf(r=>r.v[IX.HJ]);const b1=D.cmp['10/31'],bi={'급행요청':0,'입고가능':1,'입고불가':2,'입고완료':3},c0={};ORD.forEach(j=>c0[j]=b1[bi[j]]);
+  return [{d:'2026-10-31',c:c0,seed:1},{d:'2026-11-05',c:o.c,b:o.b,m:o.m,seed:1}];
+}
+function allSnaps(){
+  const M={};seeds().forEach(s=>M[s.d]=s);
+  Object.keys(S.hs).forEach(d=>{const x=S.hs[d];if(x&&x.c)M[d]=x});
+  return Object.keys(M).sort().map(d=>Object.assign({d:d},M[d],{d:d}));
+}
+function pickBase(){
+  const L=allSnaps().filter(s=>s.d<TODAY);if(!L.length)return null;
+  if(S.mode==='day')return L[L.length-1];
+  if(S.mode==='pick'){const f=L.find(s=>s.d===S.pickD);if(f)return f}
+  const tg=addD(TODAY,-7);let best=null;L.forEach(s=>{if(s.d<=tg)best=s});return best||L[0];
+}
+const tot=c=>ORD.reduce((a,j)=>a+(c[j]||0),0);
+const pc=(n,t)=>t?Math.round(n/t*1000)/10:0;
+function dlt(n,unit){if(!n)return '<span class="dl z">±0<\u002Fspan>';return '<span class="dl '+(n>0?'up':'dn')+'">'+(n>0?'▲ ':'▼ ')+Math.abs(Math.round(n*10)/10)+(unit||'')+'<\u002Fspan>'}
+function chart(snaps){
+  const W=640,H=230,pl=34,pr=10,pt=14,pb=34,n=snaps.length,bw=Math.min(54,(W-pl-pr)/n*.62),mx=Math.max.apply(null,snaps.map(s=>tot(s.c)))||1;
+  const sy=v=>(H-pb)-(v/mx)*(H-pb-pt);
+  let g='';
+  [0,.5,1].forEach(f=>{const y=sy(mx*f);g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y+'" y2="'+y+'" stroke="var(--line-2)"/><text x="'+(pl-6)+'" y="'+(y+4)+'" text-anchor="end">'+Math.round(mx*f)+'<\u002Ftext>'});
+  snaps.forEach((s,i)=>{
+    const x=pl+(W-pl-pr)/n*(i+.5)-bw/2;let acc=0;
+    ['입고완료','입고가능','급행요청','입고불가'].forEach(j=>{const v=s.c[j]||0;if(!v)return;const y1=sy(acc+v),y0=sy(acc);
+      g+='<rect x="'+x+'" y="'+y1+'" width="'+bw+'" height="'+(y0-y1)+'" style="fill:var('+FILL[j]+')"><title>'+md(s.d)+' '+j+' '+v+'건<\u002Ftitle><\u002Frect>';
+      if(y0-y1>14)g+='<text class="v" x="'+(x+bw/2)+'" y="'+((y0+y1)/2+4)+'" text-anchor="middle">'+v+'<\u002Ftext>';acc+=v});
+    g+='<text'+(s.cur?' class="cur"':'')+' x="'+(x+bw/2)+'" y="'+(H-pb+15)+'" text-anchor="middle">'+(s.cur?'현재':md(s.d))+'<\u002Ftext>';
+    if(s.cur)g+='<text class="cur" x="'+(x+bw/2)+'" y="'+(H-pb+28)+'" text-anchor="middle">'+md(s.d)+'<\u002Ftext>';
+  });
+  return '<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="날짜별 판정 건수 추이">'+g+'<\u002Fsvg>'+
+   '<div class="lg">'+ORD.map(j=>'<span><i style="background:var('+FILL[j]+')"><\u002Fi>'+j+'<\u002Fspan>').join('')+'<\u002Fdiv>';
+}
+function renderDash(){
+  const L=liveState(),base=pickBase(),T=tot(L.c),snaps=allSnaps().filter(s=>s.d<TODAY);
+  let h='<div class="dh"><div class="seg" role="group" aria-label="비교 기준">'+
+    [['day','전일 대비'],['week','전주 대비'],['pick','날짜 선택']].map(x=>'<button data-m="'+x[0]+'" aria-pressed="'+(S.mode===x[0])+'">'+x[1]+'<\u002Fbutton>').join('')+'<\u002Fdiv>';
+  if(S.mode==='pick')h+='<select id="pd" aria-label="기준일">'+snaps.map(s=>'<option value="'+s.d+'"'+(base&&base.d===s.d?' selected':'')+'>'+md(s.d)+(s.seed?' · 엑셀':'')+'<\u002Foption>').join('')+'<\u002Fselect>';
+  h+='<span class="bl">'+(base?'기준일 <b>'+md(base.d)+'<\u002Fb>'+(S.mode==='week'&&base.d>addD(TODAY,-7)?' (7일 전 기록이 없어 가장 오래된 기록 사용)':'')+' → 현재 <b>'+md(TODAY)+'<\u002Fb>':'비교할 이전 기록이 없습니다')+'<\u002Fspan><\u002Fdiv>';
+  h+='<div class="card ov"><div class="ovh"><b>전체 '+T+'건 진행 현황<\u002Fb><span>입고완료 '+pc(L.c['입고완료'],T)+'% · 아직 입고 전 '+(T-L.c['입고완료'])+'건<\u002Fspan><\u002Fdiv><div class="stk" role="img" aria-label="판정별 비율">'+['입고완료','입고가능','급행요청','입고불가'].map(j=>L.c[j]?'<i style="width:'+pc(L.c[j],T)+'%;background:var('+FILL[j]+')" title="'+j+' '+L.c[j]+'건">'+(pc(L.c[j],T)>=7?L.c[j]:'')+'<\u002Fi>':'').join('')+'<\u002Fdiv><div class="lg">'+['입고완료','입고가능','급행요청','입고불가'].map(j=>'<span><i style="background:var('+FILL[j]+')"><\u002Fi>'+j+'<\u002Fspan>').join('')+'<\u002Fdiv><\u002Fdiv>';
+  h+='<div class="kp">'+ORD.map(j=>{const bc=base?(base.c[j]||0):null;
+    return '<button class="kc '+JC[j]+'" data-f="'+j+'"><span class="l">'+j+'<\u002Fspan><span class="n">'+L.c[j]+'<small>건 · '+pc(L.c[j],T)+'%<\u002Fsmall><\u002Fspan><span class="pr"><i style="width:'+pc(L.c[j],T)+'%"><\u002Fi><\u002Fspan><span class="s">'+(base?'기준일 '+bc+' · '+dlt(L.c[j]-bc,'건'):'')+'<\u002Fspan><\u002Fbutton>'}).join('')+'<\u002Fdiv>';
+  h+='<div class="two"><div class="card"><h2>구분자별 대비표<small>건수 · 비율<\u002Fsmall><\u002Fh2><div class="ctw"><table class="ct"><thead><tr><th rowspan="2">구분자<\u002Fth>'+(base?'<th colspan="2" class="g2">기준일 '+md(base.d)+'<\u002Fth>':'')+'<th colspan="2" class="g2">현재<\u002Fth>'+(base?'<th colspan="2">증감<\u002Fth>':'')+'<\u002Ftr><tr>'+(base?'<th class="g2">건수<\u002Fth><th class="g2">비율<\u002Fth>':'')+'<th class="g2">건수<\u002Fth><th class="g2">비율<\u002Fth>'+(base?'<th>건수<\u002Fth><th>비율(%p)<\u002Fth>':'')+'<\u002Ftr><\u002Fthead><tbody>';
+  ORD.forEach(j=>{const bt=base?tot(base.c):0,bc=base?(base.c[j]||0):0;
+    h+='<tr data-f="'+j+'" tabindex="0"><td><span class="chip '+JC[j]+'">'+j+'<\u002Fspan><\u002Ftd>'+(base?'<td class="n">'+bc+'<\u002Ftd><td class="n">'+pc(bc,bt)+'%<\u002Ftd>':'')+'<td class="n">'+L.c[j]+'<\u002Ftd><td class="n">'+pc(L.c[j],T)+'%<\u002Ftd>'+(base?'<td>'+dlt(L.c[j]-bc)+'<\u002Ftd><td>'+dlt(pc(L.c[j],T)-pc(bc,bt))+'<\u002Ftd>':'')+'<\u002Ftr>'});
+  h+='<tr class="t"><td>총합<\u002Ftd>'+(base?'<td class="n">'+tot(base.c)+'<\u002Ftd><td class="n">100%<\u002Ftd>':'')+'<td class="n">'+T+'<\u002Ftd><td class="n">100%<\u002Ftd>'+(base?'<td>'+dlt(T-tot(base.c))+'<\u002Ftd><td><\u002Ftd>':'')+'<\u002Ftr><\u002Ftbody><\u002Ftable><\u002Fdiv><\u002Fdiv>';
+  const cs=snaps.slice(-9).concat([{d:TODAY,c:L.c,cur:1}]);
+  h+='<div class="card"><h2>날짜별 추이<small>기록된 날짜 기준<\u002Fsmall><\u002Fh2>'+chart(cs)+'<\u002Fdiv><\u002Fdiv>';
+  // 변동 자재
+  if(base&&base.m){
+    const ch=R.filter(r=>L.m[r.c]!==base.m[r.c]).sort((a,b)=>(L.m[a.c]-L.m[b.c])||String(a.v[IX.GN]).localeCompare(b.v[IX.GN]));
+    h+='<div class="card"><h2>판정이 바뀐 자재<small>'+md(base.d)+' → 현재 · '+ch.length+'건<\u002Fsmall><\u002Fh2>';
+    if(!ch.length)h+='<p class="note">기준일 이후 판정이 바뀐 자재가 없습니다.<\u002Fp>';
+    else h+='<div class="ctw"><table class="ct"><thead><tr><th>자재번호<\u002Fth><th>구성품목 내역<\u002Fth><th>담당자<\u002Fth><th>이전<\u002Fth><th>현재<\u002Fth><\u002Ftr><\u002Fthead><tbody>'+ch.map(r=>{const a=ORD[base.m[r.c]],b=ORD[L.m[r.c]];
+      return '<tr data-c="'+esc(r.c)+'" tabindex="0"><td class="l cs">'+esc(r.c)+'<\u002Ftd><td class="l" style="font-weight:600">'+esc(r.v[IX.GN])+'<\u002Ftd><td class="l">'+esc(names(val(r,'HK')).join(', '))+'<\u002Ftd><td class="l">'+(a?'<span class="chip '+JC[a]+'">'+a+'<\u002Fspan>':'–')+'<\u002Ftd><td class="l">'+(b?'<span class="chip '+JC[b]+'">'+b+'<\u002Fspan>':'–')+'<\u002Ftd><\u002Ftr>'}).join('')+'<\u002Ftbody><\u002Ftable><\u002Fdiv>';
+    h+='<\u002Fdiv>';
+  }else if(base){h+='<div class="card"><h2>판정이 바뀐 자재<\u002Fh2><p class="note">'+md(base.d)+' 기준은 자재별 기록 없이 건수만 있어 자재 단위 비교는 할 수 없습니다. 오늘부터는 접속·수정할 때마다 자재별 판정이 자동 기록되어 다음 비교부터 표시됩니다.<\u002Fp><\u002Fdiv>'}
+  // 담당자별
+  const bs=Object.keys(L.b).sort((a,b)=>tot2(L.b[b])-tot2(L.b[a]));
+  function tot2(o){return ORD.reduce((s,j)=>s+(o[j]||0),0)}
+  const open=o=>tot2(o)-(o['입고완료']||0);
+  h+='<div class="card"><h2>담당자별 현황<small>공동 담당은 각자 1건으로 집계 · 미완료 = 입고완료 외<\u002Fsmall><\u002Fh2><div class="ctw"><table class="ct"><thead><tr><th>담당자<\u002Fth>'+ORD.map(j=>'<th>'+j+'<\u002Fth>').join('')+'<th>합계<\u002Fth><th>미완료<\u002Fth>'+(base&&base.b?'<th>미완료 증감<\u002Fth>':'')+'<\u002Ftr><\u002Fthead><tbody>'+
+   bs.map(n=>{const o=L.b[n];return '<tr data-b="'+esc(n)+'" tabindex="0"><td>'+esc(n)+'<\u002Ftd>'+ORD.map(j=>'<td class="n'+(o[j]?'':' cs')+'">'+(o[j]||0)+'<\u002Ftd>').join('')+'<td class="n">'+tot2(o)+'<\u002Ftd><td class="n"><b>'+open(o)+'<\u002Fb><\u002Ftd>'+(base&&base.b?'<td>'+dlt(open(o)-open(base.b[n]||{}))+'<\u002Ftd>':'')+'<\u002Ftr>'}).join('')+'<\u002Ftbody><\u002Ftable><\u002Fdiv><\u002Fdiv>';
+  $('#vdash').innerHTML=h;
+  document.querySelectorAll('#vdash [data-m]').forEach(b=>b.onclick=()=>{S.mode=b.dataset.m;try{localStorage.setItem('ms.mode',S.mode)}catch(_){}renderDash()});
+  const pd=$('#pd');if(pd)pd.onchange=()=>{S.pickD=pd.value;renderDash()};
+  document.querySelectorAll('#vdash [data-f]').forEach(el=>{const g=()=>{S.f=el.dataset.f;S.b='all';S.q='';setTab('list')};el.onclick=g;el.onkeydown=e=>{if(e.key==='Enter')g()}});
+  document.querySelectorAll('#vdash tr[data-c]').forEach(el=>{const g=()=>{S.f='all';S.b='all';S.q=el.dataset.c;setTab('list')};el.onclick=g;el.onkeydown=e=>{if(e.key==='Enter')g()}});
+  document.querySelectorAll('#vdash tr[data-b]').forEach(el=>{const g=()=>{S.f='all';S.q='';S.b=el.dataset.b;setTab('list')};el.onclick=g;el.onkeydown=e=>{if(e.key==='Enter')g()}});
+}
+function fillSelects(){
+  const bs={};R.forEach(r=>names(val(r,'HK')).forEach(n=>bs[n]=(bs[n]||0)+1));
+  const keys=Object.keys(bs).sort((a,b)=>bs[b]-bs[a]);
+  $('#fb').innerHTML='<option value="all">담당자 전체<\u002Foption>'+keys.map(n=>'<option'+(S.b===n?' selected':'')+'>'+esc(n)+'<\u002Foption>').join('');
+  $('#fj').innerHTML='<option value="all">판정 전체<\u002Foption>'+ORD.map(j=>'<option'+(S.f===j?' selected':'')+'>'+j+'<\u002Foption>').join('');
+  const m=$('#me');if(!m.dataset.ok||m.options.length<2){m.innerHTML='<option value="">(선택)<\u002Foption>'+keys.map(n=>'<option'+(n===ME?' selected':'')+'>'+esc(n)+'<\u002Foption>').join('');m.dataset.ok=keys.length?'1':''}
+  $('#q').value=S.q;
+}
+function measureHead(){window.syncHs&&window.syncHs();const h=$('#tbl thead tr.r2');if(h&&h.offsetHeight)$('#tw').style.setProperty('--r2h',h.getBoundingClientRect().height+'px')}
+function setTab(t){
+  if(S.edit)return;S.tab=t;
+  document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t));
+  $('#vdash').hidden=t!=='dash';$('#vlist').hidden=t!=='list';
+  render();if(t==='list')measureHead();window.scrollTo(0,0);
+}
+let snapT=0,lastSig='';
+function schedSnap(){if(!dbc||!S.ready||!S.hsReady)return;clearTimeout(snapT);snapT=setTimeout(()=>{
+  const L=liveState(),d={d:TODAY,t:Date.now(),by:me(),c:L.c,b:L.b,m:L.m},sg=JSON.stringify([L.c,L.m]);
+  if(sg===lastSig)return;const ex=S.hs[TODAY];if(ex&&JSON.stringify([ex.c,ex.m])===sg){lastSig=sg;return}
+  lastSig=sg;dbc.doc('ms2h/'+TODAY).set(d).catch(()=>{})},1500)}
+function render(){
+  if(S.edit){S.dirty=true;return}
+  S.dirty=false;fillSelects();
+  if(S.tab==='dash')renderDash();else renderBody();
+  schedSnap();
+}
+/* 저장 */
+function setCell(code,L,v){
+  const r=byC[code],cur=S.ov[code]||{f:{},m:{}};
+  v=String(v).replace(/\s+$/,'');
+  const base=val(r,L);
+  if(String(base)===v)return;
+  const f=Object.assign({},cur.f),m=Object.assign({},cur.m);
+  if(String(r.v[IX[L]])===v){delete f[L];delete m[L]}else{f[L]=v;m[L]={by:me(),t:Date.now()}}
+  const doc={c:code,f:f,m:m};
+  S.ov[code]=doc;pend[code]=Date.now();render();
+  if(!dbc)return;
+  const p=Object.keys(f).length?dbc.doc(COLL+'/'+key(code)).set(doc):dbc.doc(COLL+'/'+key(code)).delete();
+  p.catch(()=>toast('저장에 실패했습니다. 잠시 후 다시 시도하세요.'));
+}
+/* 편집 */
+function startEdit(td){
+  if(!canEdit()||S.edit)return;
+  const L=td.dataset.l,code=td.parentNode.dataset.c,v=val(byC[code],L);
+  const multi=TEXTAREA[L];
+  const el=document.createElement(multi?'textarea':'input');
+  if(multi)el.rows=Math.max(2,String(v).split('\n').length+(L==='HZ'?1:0));else el.className='ci';
+  el.value=v;S.edit={td:td,L:L,code:code};
+  td.textContent='';td.appendChild(el);el.focus();el.setSelectionRange(el.value.length,el.value.length);
+  let done=false;
+  const fin=ok=>{if(done)return;done=true;S.edit=null;if(ok)setCell(code,L,el.value);else{S.dirty=true}render();if(S.dirty)render()};
+  el.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();fin(false)}else if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();fin(true)}};
+  el.onblur=()=>fin(true);
+}
+$('#tbl').addEventListener('click',e=>{
+  const td=e.target.closest('td.ed');if(td&&!e.target.closest('select')&&!td.querySelector('textarea,input'))startEdit(td)});
+$('#tbl').addEventListener('keydown',e=>{
+  const td=e.target.closest&&e.target.closest('td.ed');if(td&&e.target===td&&(e.key==='Enter'||e.key==='F2')){e.preventDefault();startEdit(td)}});
+$('#tbl').addEventListener('change',e=>{const s=e.target.closest('select[data-sel]');if(s)setCell(s.dataset.sel,'HJ',s.value)});
+$('#q').oninput=e=>{S.q=e.target.value;renderBody()};
+function doSort(h){const L=h.dataset.s;if(S.sort.L!==L)S.sort={L:L,d:1};else if(S.sort.d===1)S.sort={L:L,d:-1};else S.sort={L:'GK',d:1};renderBody()}
+$('#tbl thead').addEventListener('click',e=>{const h=e.target.closest('th[data-s]');if(h)doSort(h)});
+$('#tbl thead').addEventListener('keydown',e=>{const h=e.target.closest('th[data-s]');if(h&&(e.key==='Enter'||e.key===' ')){e.preventDefault();doSort(h)}});
+$('#cols').onclick=e=>{e.stopPropagation();const m=$('#colmenu');m.hidden=!m.hidden;if(!m.hidden)colMenu()};
+document.addEventListener('click',e=>{const m=$('#colmenu');if(!m.hidden&&!m.contains(e.target)&&e.target.id!=='cols')m.hidden=true});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#colmenu').hidden=true});
+$('#fb').onchange=e=>{S.b=e.target.value;renderBody()};
+$('#fj').onchange=e=>{S.f=e.target.value;renderBody()};
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.t));
+$('#me').onchange=e=>{ME=e.target.value;try{localStorage.setItem('ms.me',ME)}catch(_){}};
+
+/* 엑셀 업데이트 (STN=구성품목 코드 기준) */
+const nl=s=>String(s==null?'':s).replace(/\s+/g,'').toLowerCase();
+const ALT={HJ:['매출판정','2026매출판정'],IA:['구매요청번호','구매요청번호·상태','구매요청번호/상태','구매요청번호상태'],HK:['담당자','구매담당자'],HL:['업체명','협력사','업체'],HS:['deliverydate','delivery_date','delivery date'],HV:['changeddeliverydate','changed_delivery_date','변경납기일']};
+const KEYRE=/^(stn|구성품목코드|자재번호|자재코드|품번|p\/?n|partno\.?)$|stn|(huneed|휴니드).*(p\/?n|품번)/;
+let IMP=null;
+function nv(x){
+  if(x==null)return'';
+  if(x instanceof Date){const d=new Date(x.getTime()+60000);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+  if(typeof x==='number')return String(Math.round(x*1e6)/1e6);
+  let s=String(x).replace(/\r/g,'').replace(/\s+$/,'');
+  const m=s.match(/^(\d{4})[.\/-](\d{1,2})[.\/-](\d{1,2})(?:[ T].*)?$/);if(m)s=m[1]+'-'+pad(+m[2])+'-'+pad(+m[3]);
+  return s;
+}
+const same=(a,b)=>a===b||(a!==''&&b!==''&&!isNaN(+a)&&!isNaN(+b)&&+a===+b);
+function impMap(hdr){
+  const sl={};C.forEach(c=>{if(!c[4])return;const k=nl(c[1]);(sl[k]=sl[k]||[]).push(c[0]);(ALT[c[0]]||[]).forEach(a=>{const kk=nl(a);if(!sl[kk])sl[kk]=[c[0]]})});
+  const seen={},map={},kcs=[];let kc=-1;
+  hdr.forEach((h,i)=>{
+    const k=nl(h);if(!k)return;
+    if(KEYRE.test(k)){kcs.push(i);if(kc<0)kc=i;return}
+    const l=sl[k];if(!l)return;
+    const n=seen[k]=(seen[k]||0)+1;
+    const L=l[n-1];if(L&&!Object.values(map).includes(L))map[i]=L;
+  });
+  return {kc:kc,kcs:kcs,map:map};
+}
+function impParse(wb){
+  let best=null;
+  wb.SheetNames.forEach(sn=>{
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:''});
+    for(let h=0;h<Math.min(rows.length,15);h++){
+      const m=impMap(rows[h]);if(m.kc<0)continue;
+      const sc=Object.keys(m.map).length;
+      if(!best||sc>best.sc)best={sc:sc,sn:sn,h:h,rows:rows,kc:m.kc,kcs:m.kcs,map:m.map,hdr:rows[h]};
+    }
+  });
+  if(best){
+    const H=best.hdr.map(nl),di=H.indexOf('납기일'),qi=H.indexOf('미입고수량')>=0?H.indexOf('미입고수량'):H.indexOf('발주수량');
+    if(di>=0&&qi>=0){best.po={d:di,q:qi,qn:H.indexOf('미입고수량')>=0?'미입고 수량':'발주 수량'};best.map={}}
+  }
+  return best;
+}
+function impDiffPO(P,up){
+  const g={},miss=new Set(),hit=new Set(),all=new Set(),ch=[],cols={};
+  for(let i=P.h+1;i<P.rows.length;i++){
+    const row=P.rows[i];let raw='',code=null;
+    for(const ki of P.kcs){const r0=String(row[ki]==null?'':row[ki]).trim();if(!r0)continue;if(!raw)raw=r0;if(up[r0.toUpperCase()]){raw=r0;code=up[r0.toUpperCase()];break}}
+    if(!raw)continue;all.add(raw.toUpperCase());
+    if(!code){miss.add(raw);continue}
+    hit.add(code);
+    const q=+row[P.po.q],d=nv(row[P.po.d]);
+    if(!(q>0)||!d)continue;
+    const o=g[code]=g[code]||{};o[d]=(o[d]||0)+q;
+  }
+  const add=(code,L,n)=>{const o=String(val(byC[code],L));if(same(o,n))return;ch.push({code:code,L:L,o:o,n:n});cols[L]=(cols[L]||0)+1};
+  Object.keys(g).forEach(code=>{
+    const ds=Object.keys(g[code]).sort();
+    [['HV','HW'],['HX','HY']].forEach((p,k)=>{if(ds[k]){add(code,p[0],ds[k]);add(code,p[1],String(Math.round(g[code][ds[k]]*1e6)/1e6))}});
+  });
+  return {ch:ch,cols:cols,miss:[...miss],hit:hit.size,tot:all.size};
+}
+function impDiff(P){
+  const up={};Object.keys(byC).forEach(c=>up[c.toUpperCase()]=c);
+  if(P.po)return impDiffPO(P,up);
+  const ch=[],cols={},miss=[];let hit=0,tot=0;
+  for(let i=P.h+1;i<P.rows.length;i++){
+    const row=P.rows[i];let raw='',code=null;
+    for(const ki of P.kcs){const r0=String(row[ki]==null?'':row[ki]).trim();if(!r0)continue;if(!raw)raw=r0;if(up[r0.toUpperCase()]){raw=r0;code=up[r0.toUpperCase()];break}}
+    if(!raw)continue;tot++;
+    if(!code){miss.push(raw);continue}
+    hit++;
+    Object.keys(P.map).forEach(ci=>{
+      const L=P.map[ci],n=nv(row[ci]);
+      if(n===''&&!P.wipe)return;
+      const o=val(byC[code],L);
+      if(same(String(o),n))return;
+      ch.push({code:code,L:L,o:String(o),n:n});
+      cols[L]=(cols[L]||0)+1;
+    });
+  }
+  return {ch:ch,cols:cols,miss:miss,hit:hit,tot:tot};
+}
+function impShow(){
+  const P=IMP,D2=P.d,b=$('#impb'),a=$('#impa');
+  const lab=L=>{const c=C.find(x=>x[0]===L);return c?c[1].replace(/\n/g,' ')+(c[3]===2?'':' (생산)'):L};
+  const on=P.on,sel=D2.ch.filter(x=>on[x.L]);
+  const unm=P.hdr.map((h,i)=>({h:String(h).replace(/\s+/g,' ').trim(),i:i})).filter(x=>x.h&&!P.kcs.includes(x.i)&&!P.map[x.i]);
+  b.innerHTML=(P.po?'<div class="is"><b>발주 이력 모드<\u002Fb> — 같은 P/N의 발주 건 중 \''+esc(P.po.qn)+'\'가 있는 건만 \'납기일\' 빠른 순으로 <b>1차·2차 입고일/수량<\u002Fb>에 넣습니다 (같은 날짜는 수량 합산, 3건 이상이면 앞 2건).<\u002Fdiv>':'')+'<div class="is">시트 <b>'+esc(P.sn)+'<\u002Fb> · 키 열 <b>'+esc(P.kcs.map(i=>String(P.hdr[i]).replace(/\s+/g,' ').trim()).join(' / '))+'<\u002Fb> 기준<br>파일 '+D2.tot+(P.po?'개 P/N 중 <b>':'행 중 <b>')+D2.hit+(P.po?'개':'행')+'<\u002Fb> 일치 · 목록에 없어 건너뜀 <b>'+D2.miss.length+(P.po?'개':'행')+'<\u002Fb>. 바뀌는 칸 <b>'+sel.length+'개<\u002Fb> ('+new Set(sel.map(x=>x.code)).size+'개 자재).<\u002Fdiv>'
+   +'<div class="ic">'+Object.keys(D2.cols).map(L=>'<label><input type="checkbox" data-l="'+L+'"'+(on[L]?' checked':'')+'>'+esc(lab(L))+'<b>'+D2.cols[L]+'<\u002Fb><\u002Flabel>').join('')+'<\u002Fdiv>'
+   +'<label class="is"><input type="checkbox" id="impw"'+(P.wipe?' checked':'')+'> 엑셀의 빈 칸은 사이트 값을 지움 (기본: 빈 칸은 무시)<\u002Flabel>'
+   +(sel.length?'<div class="il"><table><thead><tr><th>STN<\u002Fth><th>열<\u002Fth><th>이전<\u002Fth><th>→ 이후<\u002Fth><\u002Ftr><\u002Fthead><tbody>'+sel.slice(0,60).map(x=>'<tr><td>'+esc(x.code)+'<\u002Ftd><td>'+esc(lab(x.L))+'<\u002Ftd><td>'+esc(x.o)+'<\u002Ftd><td>'+esc(x.n)+'<\u002Ftd><\u002Ftr>').join('')+'<\u002Ftbody><\u002Ftable><\u002Fdiv>'+(sel.length>60?'<div class="is">… 외 '+(sel.length-60)+'건<\u002Fdiv>':''):'<div class="is">바뀌는 값이 없습니다.<\u002Fdiv>')
+   +(unm.length&&!P.po?'<div class="is">인식하지 못한 엑셀 열(무시됨): '+esc(unm.map(x=>x.h).slice(0,30).join(', '))+(unm.length>30?' …':'')+'<\u002Fdiv>':'')
+   +(D2.miss.length?'<div class="is">목록에 없는 STN: '+esc(D2.miss.slice(0,20).join(', '))+(D2.miss.length>20?' 외 '+(D2.miss.length-20)+'건':'')+'<\u002Fdiv>':'');
+  a.innerHTML='<button class="btn" id="impx">닫기<\u002Fbutton><button class="btn pri" id="impok"'+(sel.length?'':' disabled')+'>'+sel.length+'개 칸 적용<\u002Fbutton>';
+  b.querySelectorAll('input[data-l]').forEach(x=>x.onchange=()=>{P.on[x.dataset.l]=x.checked;impShow()});
+  $('#impw').onchange=e=>{P.wipe=e.target.checked;P.d=impDiff(P);P.on=Object.assign({},P.on);Object.keys(P.d.cols).forEach(L=>{if(!(L in P.on))P.on[L]=colOn(L)});impShow()};
+  $('#impx').onclick=impClose;$('#impok').onclick=impApply;
+}
+const colOn=L=>{const c=C.find(x=>x[0]===L);return !!c&&c[3]===2};
+function impClose(){$('#impbg').hidden=true;IMP=null}
+async function impApply(){
+  const P=IMP,sel=P.d.ch.filter(x=>P.on[x.L]),by={};
+  sel.forEach(x=>(by[x.code]=by[x.code]||[]).push(x));
+  const codes=Object.keys(by);let fail=0,i=0;
+  $('#impok').disabled=true;
+  for(const code of codes){
+    i++;$('#impok').textContent='적용 중 '+i+'/'+codes.length;
+    const r=byC[code],cur=S.ov[code]||{f:{},m:{}},f=Object.assign({},cur.f),m=Object.assign({},cur.m);
+    by[code].forEach(x=>{if(String(r.v[IX[x.L]])===x.n){delete f[x.L];delete m[x.L]}else{f[x.L]=x.n;m[x.L]={by:me(),t:Date.now()}}});
+    const doc={c:code,f:f,m:m};S.ov[code]=doc;pend[code]=Date.now();
+    try{await (Object.keys(f).length?dbc.doc(COLL+'/'+key(code)).set(doc):dbc.doc(COLL+'/'+key(code)).delete())}catch(e){fail++}
+    pend[code]=Date.now();
+  }
+  impClose();render();
+  toast(fail?('일부 저장 실패: '+fail+'개 자재'):('적용했습니다 — '+sel.length+'개 칸, '+codes.length+'개 자재'));
+}
+$('#imp').onclick=()=>{if(!canEdit()){toast('연결된 뒤에 사용할 수 있습니다.');return}if(!window.XLSX){toast('엑셀 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인하세요.');return}$('#impf').value='';$('#impf').click()};
+$('#impf').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{
+    const wb=XLSX.read(await f.arrayBuffer(),{type:'array',cellDates:true});
+    const P=impParse(wb);
+    if(!P){toast('STN(구성품목 코드) 열을 찾지 못했습니다.');return}
+    P.wipe=false;P.d=impDiff(P);P.on={};Object.keys(P.d.cols).forEach(L=>P.on[L]=colOn(L));
+    IMP=P;$('#impbg').hidden=false;impShow();
+  }catch(err){toast('파일을 읽지 못했습니다.')}
+};
+$('#impbg').addEventListener('click',e=>{if(e.target.id==='impbg')impClose()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&IMP)impClose()});
+
+/* 현재 상태로 새 HTML 만들기 */
+const MK1='/*DA'+'TA*/',MK2='/*SR'+'C*/';
+function genHtml(){
+  const X=document.getElementById('src').textContent.replace(/<\\u002F/g,'<\u002F');
+  const nd=JSON.parse(JSON.stringify(D));
+  if(!D.seed05){
+    const s={c:{},b:{},m:{}};ORD.forEach(j=>s.c[j]=0);
+    R.forEach(r=>{const j=r.v[IX.HJ];if(s.c[j]!=null)s.c[j]++;if(ORD.includes(j))s.m[r.c]=ORD.indexOf(j);
+      names(r.v[IX.HK]).forEach(n=>{const o=s.b[n]=s.b[n]||{};o[j]=(o[j]||0)+1})});
+    nd.seed05=s;
+  }
+  nd.rows=R.map(r=>D.cols.map(L=>String(val(r,L))));
+  let nc='ms'+TODAY.replace(/-/g,'').slice(2);if(nc===(D.coll||'ms2'))nc+='b';
+  nd.coll=nc;nd.gen=TODAY;
+  const js=JSON.stringify(nd).replace(/<\//g,'<\\/');
+  return X.split(MK1).join(js).split(MK2).join(X.replace(/<\//g,'<\\u002F'));
+}
+$('#gen').onclick=async()=>{
+  let html;try{html=genHtml()}catch(e){console.log('GENERR',e&&e.message);toast('만들지 못했습니다.');return}
+  const fn='매출_결품_관리_'+TODAY.replace(/-/g,'')+'.html';
+  try{const dl=cl&&await cl.use('downloads');if(!dl)throw 0;await dl.save({filename:fn,data:html});toast('저장했습니다 — 이 파일로 교체하면 지금 값이 기준값이 됩니다.')}
+  catch(e){try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));a.download=fn;document.body.appendChild(a);a.click();a.remove();toast('저장했습니다 — 이 파일로 교체하면 지금 값이 기준값이 됩니다.')}catch(_){toast('저장할 수 없습니다.')}}
+};
+/* CSV */
+$('#csv').onclick=async()=>{
+  const V=visible(),q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const H=C.map(c=>(c[1]+(c[5]?' '+c[5]:'')).replace(/\n/g,' '));
+  const csv='﻿'+[H.map(q).join(',')].concat(V.map(r=>C.map(c=>q(val(r,c[0]))).join(','))).join('\r\n');
+  try{const dl=cl&&await cl.use('downloads');if(!dl)throw 0;await dl.save({filename:'매출결품_'+TODAY+'.csv',data:csv});toast('저장했습니다.')}
+  catch(e){try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='매출결품_'+TODAY+'.csv';document.body.appendChild(a);a.click();a.remove()}catch(_){toast('저장할 수 없습니다.')}}
+};
+/* 연결 */
+function setSync(c,t){const e=$('#sync');e.className=c;e.textContent=t}
+async function connect(){
+  cl=window.claude;
+  if(!cl){setSync('err','조회 전용 (저장소 미연결)');return}
+  try{
+    const db=await cl.use('db');
+    if(!db){setSync('err','조회 전용 (저장소 미연결)');return}
+    dbc=db;S.RO=false;
+    db.collection(COLL).onSnapshot(snap=>{
+      const now=Date.now(),seen={};
+      snap.docs.forEach(d=>{const x=d.data();if(!x||!x.c||!byC[x.c])return;seen[x.c]=1;if(pend[x.c]&&now-pend[x.c]<6000)return;S.ov[x.c]=x});
+      Object.keys(S.ov).forEach(c=>{if(!seen[c]&&!(pend[c]&&now-pend[c]<6000))delete S.ov[c]});
+      S.ready=true;const d=new Date(now);setSync('on','실시간 동기화 · '+pad(d.getHours())+':'+pad(d.getMinutes())+' 갱신');
+      render();
+    },()=>setSync('err','동기화 오류'));
+    db.collection('ms2c').onSnapshot(snap=>{
+      if(Date.now()-hidPend<3000)return;
+      let h=null;snap.docs.forEach(d=>{const x=d.data();if(x&&Array.isArray(x.h)&&x.k==='hide')h=x.h});
+      const n=new Set(h||[]);
+      if(n.size===HID.size&&[...n].every(k=>HID.has(k)))return;
+      HID=n;if(!S.edit){buildHead();if(S.tab==='list')renderBody();colMenu()}
+    },()=>{});
+    db.collection('ms2h').onSnapshot(snap=>{const h={};snap.docs.forEach(d=>{const x=d.data();if(x&&x.d)h[x.d]=x});S.hs=h;S.hsReady=true;render()},()=>{});
+  }catch(e){setSync('err','조회 전용 (연결 실패)')}
+  render();
+}
+$('#asof').textContent='생산관리(항공생산관리팀) 작성기준일 '+D.asof+' · 자재 '+R.length+'건';
+
+/* 가로 이동: 항상 보이는 스크롤바 · ◀▶ 버튼 · 끌어서 이동 · 영역 바로가기 */
+(function(){
+  const tw=$('#tw'),trk=$('#trk'),thb=$('#thb'),fl=$('#fl'),fr=$('#fr');
+  const max=()=>Math.max(0,tw.scrollWidth-tw.clientWidth);
+  function upd(){
+    const sw=tw.scrollWidth,cw=tw.clientWidth,tl=trk.clientWidth;
+    if(!sw||!tl)return;
+    const w=Math.max(44,tl*cw/sw),m=max();
+    thb.style.width=w+'px';thb.style.left=(m?tw.scrollLeft/m*(tl-w):0)+'px';
+    fl.hidden=tw.scrollLeft<4;fr.hidden=tw.scrollLeft>m-4;
+    const st=window.innerWidth>900?CV().filter(c=>['GK','GM','GN'].includes(c[0])).reduce((a,c)=>a+c[2],0):0;
+    fl.style.left=(st+10)+'px';
+  }
+  window.syncHs=upd;
+  tw.addEventListener('scroll',upd);window.addEventListener('resize',upd);
+  if(window.ResizeObserver)new ResizeObserver(upd).observe(tw);
+  // 썸 끌기
+  let td0=null;
+  thb.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();thb.setPointerCapture(e.pointerId);td0={x:e.clientX,l:tw.scrollLeft};thb.classList.add('on')});
+  thb.addEventListener('pointermove',e=>{if(!td0)return;const tl=trk.clientWidth,w=thb.offsetWidth;const k=max()/Math.max(1,tl-w);tw.scrollLeft=td0.l+(e.clientX-td0.x)*k});
+  const endT=()=>{td0=null;thb.classList.remove('on')};thb.addEventListener('pointerup',endT);thb.addEventListener('pointercancel',endT);
+  // 트랙 클릭
+  trk.addEventListener('pointerdown',e=>{if(e.target===thb)return;const r=trk.getBoundingClientRect(),f=(e.clientX-r.left)/r.width;tw.scrollTo({left:f*tw.scrollWidth-tw.clientWidth/2,behavior:'smooth'})});
+  // ◀ ▶ (누르고 있으면 계속 이동)
+  function hold(btn,dir){let iv=0;
+    const go=()=>{tw.scrollLeft+=dir*34};
+    btn.addEventListener('pointerdown',e=>{e.preventDefault();tw.scrollBy({left:dir*360,behavior:'smooth'});clearInterval(iv);setTimeout(()=>{if(btn._h){iv=setInterval(go,16)}},350);btn._h=1});
+    const stop=()=>{btn._h=0;clearInterval(iv)};btn.addEventListener('pointerup',stop);btn.addEventListener('pointerleave',stop);btn.addEventListener('pointercancel',stop);
+    btn.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();tw.scrollBy({left:dir*360,behavior:'smooth'})}})}
+  hold($('#hl'),-1);hold($('#hr'),1);hold(fl,-1);hold(fr,1);
+  // 표 끌어서 이동
+  let dr=null;
+  tw.addEventListener('mousedown',e=>{if(e.button!==0||e.target.closest('input,textarea,select,th[data-s]'))return;dr={x:e.clientX,y:e.clientY,l:tw.scrollLeft,t:tw.scrollTop,m:0}});
+  window.addEventListener('mousemove',e=>{if(!dr)return;const dx=e.clientX-dr.x,dy=e.clientY-dr.y;
+    if(!dr.m&&Math.abs(dx)+Math.abs(dy)>6){dr.m=1;tw.classList.add('drag');const s=getSelection&&getSelection();if(s)s.removeAllRanges()}
+    if(dr.m){tw.scrollLeft=dr.l-dx;tw.scrollTop=dr.t-dy;e.preventDefault()}});
+  window.addEventListener('mouseup',()=>{if(dr&&dr.m){tw.classList.remove('drag');tw._drag=Date.now()}dr=null});
+  tw.addEventListener('click',e=>{if(tw._drag&&Date.now()-tw._drag<80){e.stopPropagation();e.preventDefault()}},true);
+  // 영역 이동
+  document.querySelectorAll('#jump button').forEach(b=>b.onclick=()=>{
+    const g=Number(b.dataset.j),c=CV().find(x=>x[3]===g);if(!c)return;
+    let st=0;if(window.innerWidth>900)['GK','GM','GN'].forEach(L=>{const x=CV().find(y=>y[0]===L);if(x)st+=x[2]});
+    const th=tw.querySelector('th[data-s="'+c[0]+'"]');if(!th)return;
+    tw.scrollTo({left:g===1?0:Math.max(0,th.offsetLeft-st-4),behavior:'smooth'});
+  });
+})();
+colMenu();buildHead();setTab('dash');connect();
+})();
+<\u002Fscript>
+
+<\u002Fbody>
+<\u002Fhtml>
+</script>
 <script type="application/json" id="data">{"cols":["GK","GL","GM","GN","GO","GP","GQ","GR","GS","GT","GU","GV","GW","GX","GY","HA","HB","HC","HD","HE","HF","HG","HH","HJ","HK","HL","HM","HN","HO","HP","HQ","HR","HS","HT","HU","HV","HW","HX","HY","HZ","IA","IB","IC","ID","IE","IF","IG","IH","II","IJ","IK","IL","IM","IN","IO","IP","IQ"],"rows":[["1","1","0150-100-0763","BACKSHELL,RT,SIZE15,M38999 III","M85049/38S15W","EA","0","1","1","0","0","","0","0","-1","0","0","1","0","1","0","2026-11-15","","입고가능","신승희","A2C","2026-08-13","","","기존 발주서","","2026-10-20","N/A","2026-11-01","-1","2026-11-25","20","","0","선적스케줄 확인중","10004355-10 · 미발주(대기중) · 61일 경과","0","0","0","0","0","0","1","-1","2026-10-20","12","2026-11-06","2026-11-15","","4","PO 1건 · 4~4주 · 최근 4주(23.03) → 지금 발주 시 26.11.09 11/30 내(급행)","2026-11-09"],["2","2","0150-100-0791","CONTACT,M39029/87-472","M39029/87-472","EA","0","2","2","0","0","","0","0","-2","0","0","1","0","0","2","2026-11-15","","입고불가","신승희","FDH Electronics","-","","","NBBC-I-26-0488","11","-","N/A","2026-11-01","-2","TBD","TBD","","0","최종 사용불가 판정","구매요청 미등록 (10월 1주차 미발주현황 기준)","0","0","0","11","0","0","2","-2","2026-10-20","12","2026-11-06","2026-11-15","","13.1","PO 1건 · 13~13주 · 최근 13주(26.03) → 지금 발주 시 27.01.12 2027년(2026 매출 불가)","2027-01-12"],["3","3","0150-100-0902","CONNECTOR,RECEP,SHELL22,21SKT","MS27497T22B21S","EA","0","27","27","8","0","","0","8","-19","0","0","1","4","10","20","2026-11-15","","입고완료","신승희","FDH Electronics","2024-09-27","11","","4500008214/90\n4500008214/180","11\n11","2024-11-20\n2024-11-20","2026-11-30\n2027-03-26","입고완료","0","","0","","0","급행요청완료 - 생산관리 투입 확인*","PR 10003357 (등록일 자료 없음)","8","0","0","0","0","8","27","-19","2026-10-20","12","2026-11-06","2026-11-15","","29.6","PO 2건 · 10~49주 · 최근 49주(24.11) → 지금 발주 시 27.05.07 2027년(2026 매출 불가)","2027-05-07"],["4","4","0150-100-1036","CONNECTOR,RECEP,SHELL25,128SKT","D38999/20WJ35SA","EA","2","0","2","0","0","","0","0","-2","0","0","2","2","0","2","2026-11-15","","입고불가","신승희","FDH Electronics","-","","","NBBC-I-26-0514\nNBBC-I-26-0302","26","-","N/A","2026-11-01","-2","TBD","TBD","","0","최종 사용불가 판정(NOE)","구매요청 미등록 (10월 1주차 미발주현황 기준)","0","0","0","0","26","0","2","-2","2026-10-20","12","2026-11-06","2026-11-15","","28.1","PO 4건 · 5~61주 · 최근 37주(24.08) → 지금 발주 시 27.04.27 2027년(2026 매출 불가)","2027-04-27"],["5","5","0150-100-1220","NUT RING,M85049/95-28A-A","M85049/95-28A-A","EA","0","7","7","0","0","","0","0","-7","2","2","0","1","6","4","2026-11-24","","급행요청","신승희","FDH Electronics","2026-06-10","120","","NBBC-I-26-0302","120","2025-08-06","2026-11-30","2026-11-10","-7","","0","","0","급행요청완료","10004246-770 · 미발주(대기중) · 124일 경과 외 2건","0","0","0","0","0","0","7","-7","2026-10-20","21","2026-11-19","2026-11-24","1","2.6","PO 1건 · 3~3주 · 최근 3주(24.03)",""],["6","6","0150-100-1413","CONNECTOR,RECEP,SHELL24,10SKT","MS3452W24-10SW","EA","0","2","2","1","0","","0","1","-1","0","1","0","6","2","2","2026-11-24","","급행요청","신승희","FDH Electronics","2026-08-12","1","","4500011983/70","1","2026-09-21","2026-11-13","2026-11-10","-1","","0","","0","급행요청완료","10004357-10 · 발주 전환(1차 PO 4500011983)","1","0","0","0","0","1","2","-1","2026-10-20","21","2026-11-19","2026-11-24","1","34.1","PO 1건 · 34~34주 · 최근 34주(25.02)",""],["7","7","0150-100-1427","CONNECTOR,PLUG,SHELL14,5SKT","MS3476W14-5S","EA","0","12","12","2","0","","31","33","21","0","1","0","0","0","12","2026-11-24","","입고완료","신승희","FDH Electronics","2026-02-05","31","","4500010587/230","31","2026-02-10","2026-11-30","입고완료","0","","31","","0","수검 창고 31개 - 생산관리 투입 확인*","PR 10004056 (등록일 자료 없음)","2","0","0","0","0","2","12","-10","2026-10-20","21","2026-11-19","2026-11-24","1","41.9","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["8","8","0150-100-1543","CONNECTOR,RECEP,SHELL25,61SKT","D38999/20WJ61SA","EA","0","2","2","0","0","","0","0","-2","0","0","2","0","2","0","2026-11-15","","급행요청","신승희","FDH Electronics","-","","","NBBA-I-26-0665","35","-","N/A","2026-11-01","-2","","0","","0","급행요청완료(부적합재고처리)","구매요청 미등록 (10월 1주차 미발주현황 기준)","0","0","0","35","0","0","2","-2","2026-10-20","12","2026-11-06","2026-11-15","","6.3","PO 1건 · 6~6주 · 최근 6주(26.07) → 지금 발주 시 26.11.25 11/30 내(급행)","2026-11-25"],["9","9","0150-100-1759","CONTACT,BUSHING,MS3348-8-10","MS3348-8-10","EA","0","35","35","0","0","","0","0","-35","2","0","2","0","23","12","2026-11-15","","입고가능","신승희","Semyung","2026-08-24","195","2026-10-30","4500011446/10","195","2026-10-19","2026-10-30","2026-11-01","-35","","0","","0","10/27 195ea 반입완료 → 부적합 반품","10004384-300 · 미발주(대기중) · 49일 경과","0","0","0","0","0","0","35","-35","2026-10-20","12","2026-11-06","2026-11-15","1","","L/T 이력 없음",""],["10","10","0150-100-1786","CONNECTOR,MS3450W28-1P","MS3450W28-1P","EA","0","4","4","0","0","0","0","0","-4","2","0","0","0","2","2","2026-11-30","","입고불가","신승희","스마트라인","2026-08-25","","","발주 완료","","2026-10-20","N/A","2026-11-16","-4","2027-03-15","35","","0","예상 납기일 20주이상","10004384-310 · 미발주(대기중) · 49일 경과","0","0","0","0","0","0","4","-4","2026-10-20","27","2026-11-24","2026-11-30","","","",""],["11","11","0150-120-0428","BACKSHELL,06F5024R1508CN","06F5024R1508CN","EA","0","2","2","36","0","","0","36","34","0","0","2","0","0","2","2026-11-15","","입고완료","신승희","CBOL Corporation","-","36","입고완료","4500010651/150","36","2026-03-03","2026-09-27","입고완료","34","","0","","0","10/21 32ea 입고완료","PR 10004007 (등록일 자료 없음)","32","0","4","0","0","32","2","30","2026-10-20","12","2026-11-06","2026-11-15","1","29.7","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["12","12","0150-997-0106","SEALINGPLUG,#12,PLASTIC,YEL","MS27488-12-3","EA","0","21","21","317","0","","0","317","296","2","0","0","0","11","10","2026-11-24","","입고완료","신승희","Wiremasters","2026-08-24","17","입고완료","4500012000/10\n4500011515/930","300\n17","2026-09-15\n2026-07-21","2026-09-30\n2026-10-01","입고완료","296","","0","","0","10/20 300ea 입고완료","10004384-360 · 발주 전환(1차 PO 4500012000)","317","0","0","0","0","317","21","296","2026-10-20","21","2026-11-19","2026-11-24","2","2.1","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["13","13","0210-110-0224","DIODE,02316-0009-0005","02316-0009-0005","EA","0","2","2","0","0","","35","35","33","0","0","1","0","2","0","2026-11-15","","입고완료","신승희","GMS International Corporation","2026-06-24","35","2026-10-30","4500011818/10\n4500011818/20","35\n105","2026-09-04\n2026-09-04","2026-11-15\n2028-02-01","2026-11-01","33","","0","","0","10/29 35ea 수검中","10004277-930 · 이전 구매요청(발주 전환)","0","0","0","0","0","0","2","-2","2026-10-20","12","2026-11-06","2026-11-15","1","","L/T 이력 없음",""],["14","14","0295-140-0049","RELAY,ST5M1243-3105","ST5M1243-3105","EA","10","0","10","0","0","","0","0","-10","0","0","1","10","4","8","2026-11-15","","입고가능","이준영","TE AMP Korea","2024-08-27","6","","4500008125/90","34","2024-11-11","2026-12-31","2026-11-01","-10","","0","","0","12월 중순 중 6EA BFM 자재 가능 \n(사관 PUSH)","PR 10003311 (등록일 자료 없음)","0","2","0","0","0","2","10","-8","2026-10-20","12","2026-11-06","2026-11-15","1","4.7","PO 3건 · 2~9주 · 최근 9주(26.06)",""],["15","15","0295-140-0055","RELAY,M39016-13-060L","M39016-13-060L","EA","5","2","7","0","0","","1","1","-6","0","1","0","5","0","8","2026-11-24","","급행요청","신승희","Flame Enterprises","2026-10-15","7","","4500008629/10","1","-","2026-07-30","2026-11-10","-6","2026-10-30","1","","0","재고수배中(Flame으로 견적문의) - 10/30 1ea 수검中","PR 10003474 (등록일 자료 없음)","0","0","0","0","0","0","7","-7","2026-10-20","21","2026-11-19","2026-11-24","","6","PO 2건 · 4~8주 · 최근 8주(23.12) → 지금 발주 시 26.11.23 11/30 내(급행)","2026-11-23"],["16","16","0295-140-0060","RELAY,MS24568-D1","MS24568-D1","EA","1","4","5","0","0","","0","0","-5","0","1","0","0","0","6","2026-11-24","","급행요청","신승희","Flame Enterprises","2026-09-17","5","","미납 PO 없음","","-","N/A","2026-11-10","-5","","0","","0","재고수배中(Flame으로 견적문의)","10004445-610 · 미발주(대기중) · 25일 경과 외 1건","0","0","0","0","0","0","5","-5","2026-10-20","21","2026-11-19","2026-11-24","","19","PO 3건 · 4~50주 · 최근 50주(23.12) → 지금 발주 시 27.02.22 2027년(2026 매출 불가)","2027-02-22"],["17","17","0295-140-0068","RELAY, 6042H142","6042H142","EA","0","2","2","0","0","","0","0","-2","1","0","0","0","2","1","2026-11-30","","입고불가","신승희","Flame Enterprises","2026-08-12","TBD","TBD","미납 PO 없음","","-","N/A","2026-11-16","-2","TBD","0","","0","AMPL 등록 제품인 -2 단종, -3 등록 필요","10004349-10 · 미발주(대기중) · 61일 경과","0","0","0","0","1","0","2","-2","2026-10-20","27","2026-11-24","2026-11-30","","29.1","PO 2건 · 8~50주 · 최근 50주(23.12) → 지금 발주 시 27.05.04 2027년(2026 매출 불가)","2027-05-04"],["18","18","0295-140-0090","AC CURRENT INDICATOR RELAY,0-1616132-2","0-1616132-2","EA","0","2","2","1","0","","0","1","-1","0","1","0","0","6","0","2026-11-24","","입고가능","이준영","TE AMP Korea","2025-07-07","115","2026-11-15","4500009914/330","115","2025-09-10","2026-09-30","2026-11-10","-1","","0","","0","11/15 이내 입고 예정","PR 10003796 (등록일 자료 없음)","1","0","0","0","0","1","2","-1","2026-10-20","21","2026-11-19","2026-11-24","1","2.9","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["19","19","0295-140-0093","RELAY,M83536/22-024M","M83536/22-024M","EA","0","4","4","0","0","","0","0","-4","0","0","1","0","4","0","2026-11-15","","입고불가","이준영","Leach International Europe S.A","2025-12-19","6","2026-12-04","4500010645/10\n4500011949/140\n4500011949/150\n4500011949/160\n4500011949/170","68\n70\n70\n8\n68","2026-02-27\n2026-09-16\n2026-09-16\n2026-09-16\n2026-09-16","2027-05-13\n2027-09-01\n2027-09-01\n2027-09-01\n2027-09-01","2026-11-01","-4","2026-12-04","6","","0","12/04 6EA 선적 예정","PR 10004004 (등록일 자료 없음)","0","0","0","0","0","0","4","-4","2026-10-20","12","2026-11-06","2026-11-15","5","56.4","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 2건)",""],["20","20","0295-140-0095","RELAY,V110-J-022-AC","V110-J-022-AC","EA","0","1","1","0","0","","0","0","-1","0","0","1","0","1","0","2026-11-15","","입고불가","이준영","Leach International Europe S.A","2025-12-19","6","2027-01-30","4500010645/20","18","2026-02-27","2027-01-15","2026-11-01","-1","2027-01-30","6","","0","`27.1월 6EA 선적 예정","PR 10004004 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","12","2026-11-06","2026-11-15","1","46","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["21","21","0295-300-0008","SOCKET,RELAY,M12883/51-001(F-15/18 ONLY)","M12883/51-001","EA","8","0","8","0","0","","0","0","-8","0","1","11","18","74","122","2026-11-15","TE","입고불가","이준영","TE AMP Korea","2023-12-18","70","TBD","4500008111/170\n4500008111/270\n4500008125/1280\n4500008125/1600\n4500008125/380\n4500008125/580\n4500008125/70\n4500008125/930\n4500008126/60\n4500008180/90","136\n393\n445\n440\n5\n450\n5\n445\n70\n5","2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-14","2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31","2026-11-01","-8","TBD","TBD","","0","9월 말 135개 입고 완료\n이미 투입완료 / 차후 물량 없음","PR 10002877 (등록일 자료 없음)","0","0","0","1","0","0","8","-8","2026-10-20","12","2026-11-06","2026-11-15","10","48.8","PO 2건 · 1~96주 · 최근 1주(26.08)",""],["22","22","0295-300-0009","SOCKET,RELAY,M12883/51-003(F-15/18 ONLY)","M12883/51-003","EA","87","0","87","0","0","","2","2","-85","0","0","6","82","29","59","2026-11-15","TE","입고완료","이준영","TE AMP Korea","-","101\n151","입고완료","4500008111/30\n4500011698/10\n4500008111/180\n4500008111/280\n4500008125/1270\n4500008125/1590\n4500008125/570\n4500008125/60\n4500008125/920\n4500008126/50","5\n2\n114\n150\n135\n120\n140\n30\n135\n25","2024-11-11\n2026-08-21\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11","2026-09-30\n2026-11-15\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31","입고완료","-85","","0","","0","10/22 233ea 입고완료","PR 10002457 (등록일 자료 없음)","0","0","203","0","0","0","87","-87","2026-10-20","12","2026-11-06","2026-11-15","10","78","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 3건)",""],["23","23","0295-300-0010","SOCKET,RELAY,M12883/50-002(F-15/18 ONLY)","M12883/50-002","EA","6","0","6","0","0","","0","0","-6","0","1","12","40","147","241","2026-11-15","TE","입고불가","박소영(사관)","BDS(Boeing Distribution Service Inc","2023-12-18","TBD","TBD","4500000632/100\n4500008111/190\n4500008111/290\n4500008111/530\n4500008111/580\n4500008125/1260\n4500008125/1580\n4500008125/370\n4500008125/50\n4500008125/560\n4500008125/910\n4500008126/40\n4500008180/100","165\n8\n758\n7\n10\n966\n945\n7\n266\n966\n966\n147\n7","2020-12-25\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-14","2025-02-20\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31","2026-11-01","-6","TBD","TBD","","0","금년 입고 불가 품목","PR 10003383 (등록일 자료 없음)","0","0","0","0","0","0","6","-6","2026-10-20","12","2026-11-06","2026-11-15","13","32.4","PO 3건 · 1~82주 · 최근 82주(24.11)",""],["24","24","0295-300-0011","TRACK,RELAY,M12883/49-004","M12883/49-004","EA","23","0","23","0","0","","0","0","-23","0","0","4","30","9","18","2026-11-15","TE","입고불가","이준영","TE AMP Korea","2023-12-18","TBD","TBD","4500008111/200\n4500008111/300\n4500008111/40\n4500008125/1250\n4500008125/1570\n4500008125/550\n4500008125/900\n4500008126/30","120\n136\n3\n150\n130\n150\n150\n30","2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11","2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31","2026-11-01","-23","TBD","TBD","","0","금년 입고 불가 품목","PR 10002457 (등록일 자료 없음)","0","0","0","0","0","0","23","-23","2026-10-20","12","2026-11-06","2026-11-15","8","93.3","PO 1건 · 93~93주 · 최근 93주(24.11)",""],["25","25","0295-300-0012","SOCKET,RELAY,M12883/51-004(F-15/18 ONLY)","M12883/51-004","EA","4","0","4","0","0","","137","137","133","0","1","7","37","23","52","2026-11-15","TE","입고완료","이준영","TE AMP Korea","-","","입고완료","4500002254/570\n4500011769/30\n4500011698/30\n4500002254/580\n4500008111/310\n4500008125/1240\n4500008125/1560\n4500008125/890\n4500008126/20\n4500008180/110","103\n15\n7\n190\n23\n135\n125\n135\n30\n5","2021-08-12\n2026-09-01\n2026-08-21\n2021-08-12\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-14","2022-12-22\n2026-10-30\n2026-11-15\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31","입고완료","133","","0","","0","10/26 7ea 입고완료","PR 10003311 (등록일 자료 없음)","0","0","29","0","0","0","4","-4","2026-10-20","12","2026-11-06","2026-11-15","9","2","PO 4건 · 1~3주 · 최근 1주(26.08)",""],["26","26","0295-300-0013","TRACK,RELAY,M12883/49-002","M12883/49-002","EA","19","0","19","0","0","","0","0","-19","0","1","3","19","13","29","2026-11-15","","입고불가","이준영","TE AMP Korea","2023-12-18","TBD","TBD","4500008125/1230\n4500008125/1550\n4500008125/30\n4500008125/350\n4500008125/530\n4500008125/880\n4500008180/120","44\n11\n55\n11\n55\n44\n11","2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-14","2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31","2026-11-01","-19","TBD","TBD","","0","금년 입고 불가 품목","PR 10003383 (등록일 자료 없음)","0","0","0","0","0","0","19","-19","2026-10-20","12","2026-11-06","2026-11-15","6","67.7","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 2건)",""],["27","27","0295-300-0014","TRACK,RELAY,M12883/49-003","M12883/49-003","EA","5","0","5","0","0","","0","0","-5","0","0","2","5","4","14","2026-11-15","","입고불가","이준영","TE AMP Korea","2023-12-18","TBD","TBD","4500008125/1220\n4500008125/1540\n4500008125/20\n4500008125/520\n4500008125/870\n4500008126/10\n4500008180/130","10\n10\n20\n20\n10\n10\n10","2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-14","2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31","2026-11-01","-5","TBD","TBD","","0","금년 입고 불가 품목","PR 10003383 (등록일 자료 없음)","0","0","0","0","0","0","5","-5","2026-10-20","12","2026-11-06","2026-11-15","6","6.7","PO 1건 · 7~7주 · 최근 7주(24.01)",""],["28","28","0295-300-0018","TRACK,RELAY,M12883/49-005","M12883/49-005","EA","16","0","16","0","0","","0","0","-16","0","0","2","16","14","34","2026-11-15","TE","입고불가","이준영","TE AMP Korea","2023-12-18","TBD","TBD","4500002254/30\n4500008111/220\n4500008111/350\n4500008125/1180\n4500008125/1500\n4500008125/480\n4500008125/830\n4500008126/230","12\n50\n70\n63\n45\n63\n63\n18","2021-08-12\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11","2026-08-13\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31","2026-11-01","-16","TBD","TBD","","0","금년 입고 불가 품목","PR 10002877 (등록일 자료 없음)","0","0","0","0","0","0","16","-16","2026-10-20","12","2026-11-06","2026-11-15","7","13.5","PO 3건 · 1~35주 · 최근 4주(26.03)",""],["29","29","0295-300-0022","SOCKET,RELAY,ST5M1457-003","ST5M1457-003","EA","72","0","72","0","0","","0","0","-72","0","0","8","78","81","241","2026-11-15","","입고불가","이준영","TE AMP Korea","2023-12-18","TBD","TBD","4500008125/1140\n4500008125/1460\n4500008125/280\n4500008125/440\n4500008125/790\n4500008126/210\n4500008180/10","440\n410\n460\n440\n440\n97\n10","2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-14","2026-11-05\n2026-11-05\n2026-11-05\n2026-11-05\n2026-11-05\n2026-11-05\n2026-11-05","2026-11-01","-72","TBD","TBD","","0","금년 입고 불가 품목","PR 10003383 (등록일 자료 없음)","0","0","0","0","1","0","72","-72","2026-10-20","12","2026-11-06","2026-11-15","7","25.8","PO 3건 · 18~30주 · 최근 29주(24.11)",""],["30","30","0295-300-0025","TRACK,RELAY,ST5M1458-005","ST5M1458-005","EA","43","0","43","0","0","","0","0","-43","0","0","5","42","17","63","2026-11-15","TE","입고불가","신승희","Flame Enterprises","2023-12-18","TBD","TBD","4500001073/10\n4500008111/100\n4500008111/370\n4500008125/1110\n4500008125/1770\n4500008125/410\n4500008125/760\n4500008126/180\n4500008180/30","51\n140\n85\n171\n152\n171\n171\n76\n19","2020-12-31\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-11\n2024-11-14","2022-02-22\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31\n2026-12-31","2026-11-01","-43","TBD","TBD","","0","금년 입고 불가 품목","PR 10003383 (등록일 자료 없음)","0","0","0","1","0","0","43","-43","2026-10-20","12","2026-11-06","2026-11-15","9","31.5","PO 3건 · 1~91주 · 최근 2주(26.08)",""],["31","31","0295-300-0029","SOCKET,RELAY,5M3123-1","5M3123-1","EA","27","0","27","0","0","","0","0","-27","0","0","1","67","0","0","2026-11-15","","입고가능","이준영","TE AMP Korea","2024-08-27","300","2026-11-30","4500008125/220\n4500010680/20","80\n7","2024-11-11\n2026-03-10","2026-10-30\n2026-12-31","2026-11-01","-27","2026-11-30","300","","0","11월 중 300개 입고 가능","PR 10003311 (등록일 자료 없음)","0","0","0","0","0","0","27","-27","2026-10-20","12","2026-11-06","2026-11-15","2","28.9","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 2건)",""],["32","32","0295-300-0047","RELAY SOCKET,SO-1048-8518","SO-1048-8518","EA","0","35","35","34","0","","0","34","-1","1","1","10","16","18","17","2026-11-15","","입고완료","이준영","Leach International Europe S.A","2026-08-30","5","","4500010614/10\n4500011949/180\n4500011949/190\n4500011949/200","464\n34\n33\n33","2026-02-13\n2026-09-16\n2026-09-16\n2026-09-16","2026-10-23\n2027-09-01\n2027-09-01\n2027-09-01","입고완료","0","","0","","0","Leach OA 미발행\n유선으로 5개 가능 요청 - 생산관리 투입 확인*","10004398-330 · 이전 구매요청(발주 전환)","34","0","0","0","0","34","35","-1","2026-10-20","12","2026-11-06","2026-11-15","4","44.9","PO 2건 · 40~50주 · 최근 50주(24.08)",""],["33","33","0295-300-0048","RELAY SOCKET,SO-1064-003","SO-1064-003","EA","101","76","177","0","0","","0","0","-177","0","0","1","101","76","114","2026-11-15","CUEP03","입고완료","이준영","Leach International Europe S.A","2025-04-23","1902-11-28","2026-11-20","4500009584/70","1140","2025-07-14","2026-09-30","2026-11-01","-177","2026-11-02","1063","","0","Leach OA 미발행\n77ea 입고완료\n1063개 11/2로 지연","PR 10003691 (등록일 자료 없음)","0","0","77","284","2","0","177","-177","2026-10-20","12","2026-11-06","2026-11-15","1","48","PO 3건 · 40~61주 · 최근 61주(25.02)",""],["34","34","0295-300-0088","RELAY SOCKET,SO-1021-7127","SO-1021-7127","EA","0","1","1","0","0","","0","0","-1","0","0","1","0","1","0","2026-11-15","","입고불가","이준영","Leach International Europe S.A","2025-12-19","18","2026-11-22","4500010645/30","18","2026-02-27","2026-11-27","2026-11-01","-1","2026-11-22","18","","0","11/22 18EA 선적예정","PR 10004004 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","12","2026-11-06","2026-11-15","1","39","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["35","35","0321-118-0654","Resistor,RLR07C2000GR","RLR07C2000GR","EA","0","2","2","0","0","","0","0","-2","0","1","0","0","2","0","2026-11-24","","입고가능","신승희","TTI,Inc.","2026-08-24","10","2026-11-15","4500011994/60","35","2026-09-21","2026-09-30","2026-11-10","-2","2026-11-04","35","","0","11/4 선적예정","10004384-640 · 발주 전환(1차 PO 4500011994)","0","0","0","0","0","0","2","-2","2026-10-20","21","2026-11-19","2026-11-24","1","1.3","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["36","36","0321-118-0655","Resistor,RLR07C6040FS","RLR07C6040FS","EA","0","1","1","0","0","","0","0","-1","0","1","0","0","1","0","2026-11-24","","입고가능","신승희","TTI,Inc.","2026-08-24","10","2026-11-15","4500011994/70","18","2026-09-21","2026-09-30","2026-11-10","-1","2026-11-04","15","","0","11/4 선적예정","10004384-650 · 발주 전환(1차 PO 4500011994)","0","0","0","0","0","0","1","-1","2026-10-20","21","2026-11-19","2026-11-24","1","1.3","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["37","37","0323-110-0033","RESISTOR,RLR32C3241FR","RLR32C3241FR","EA","4","2","6","196","0","","0","196","190","0","1","0","4","6","0","2026-11-24","","입고완료","신승희","TTI,Inc.","-","200","입고완료","4500011230/10","200","2026-06-09","2026-10-15","입고완료","190","","0","","0","10/20 200ea 입고완료","PR 10004122 (등록일 자료 없음)","196","0","0","0","0","196","6","190","2026-10-20","21","2026-11-19","2026-11-24","2","18.3","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["38","38","0337-103-0037","RESISTOR,VR,4OHM,ST5M1259L4","ST5M1259L4","EA","0","72","72","477","0","","0","477","405","1","0","3","28","51","72","2026-11-15","","입고완료","이민정","Samarius Precision Instruments Inc.","2026-07-22","28","입고완료","4500010646/110\n4500010646/120\n4500011868/30","265\n151\n28","2026-03-02\n2026-03-02\n2026-09-09","2026-10-16\n2026-10-16\n2027-06-10","입고완료","405","2026-10-16","416","2027-06-30","0","10/20 416ea 입고완료","10004327-210 · 이전 구매요청(발주 전환)","477","0","0","1","10","477","72","405","2026-10-20","12","2026-11-06","2026-11-15","2","30","PO 12건 · 14~62주 · 최근 15주(26.03)",""],["39","39","0337-103-0039","POTENTIOMETER,5M1760-001","5M1760-001","EA","0","92","92","86","0","","0","86","-6","0","1","0","16","64","16","2026-11-24","","입고완료","신승희","TTI,Inc.","2025-09-26","6","2026-11-15","4500011335/10","270","2026-06-23","2026-11-05","입고완료","0","","0","","0","11/5 이내 휴니드 도착예정 - 생산관리 투입 확인*","PR 10003893 (등록일 자료 없음)","86","0","0","0","0","86","92","-6","2026-10-20","21","2026-11-19","2026-11-24","1","19.3","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["40","40","0360-110-0020","SWITCH,TOGGLE,LEVER LOCK,5M1031-6","5M1031-6","EA","2","49","51","25","0","","0","25","-26","3","1","0","24","42","9","2026-11-24","","입고완료","신승희","주식회사 스마트라인","2025-01-16","10","2026-10-30","4500008198/40\n4500008624/140\n4500009111/20\n4500010184/170\n4500010184/60\n4500010621/20\n4500010881/60\n4500008198/450\n4500012031/50\n4500012031/20\n4500012031/60\n4500012031/70\n4500012031/30\n4500012031/80","3\n22\n2\n7\n3\n2\n1\n24\n38\n22\n24\n4\n2\n2","2024-11-18\n2025-02-12\n2025-03-24\n2025-11-05\n2025-11-05\n2026-02-13\n2026-04-10\n2024-11-18\n2026-09-29\n2026-09-29\n2026-09-29\n2026-09-29\n2026-09-29\n2026-09-29","2026-01-23\n2026-10-13\n2026-10-13\n2026-10-13\n2026-10-13\n2026-10-13\n2026-10-13\n2027-01-31\n2027-02-01\n2027-05-01\n2027-05-01\n2027-08-01\n2028-08-01\n2028-08-01","입고완료","0","","0","","0","10/20 34ea 입고분중 17ea 부적합발생\n(토글 스위치의 손잡이와 키각이 불일치하게 조립)\n11/4 15ea 입고예정 - 생산관리 투입 확인*","10004378-30 · 이전 구매요청(발주 전환)","19","0","10","0","0","19","51","-32","2026-10-20","21","2026-11-19","2026-11-24","13","24.6","PO 9건 · 8~43주 · 최근 8주(24.11)",""],["41","41","0360-110-0101","SWITCH,TOGGLE,MS27754-34A","MS27754-34A","EA","3","0","3","0","0","","0","0","-3","0","0","2","3","0","3","2026-11-15","","입고불가","신승희","주식회사 스마트라인","2026-08-30","TBD","TBD","4500011928/20\n4500008371/10\n4500008371/20\n4500008468/10\n4500008624/100\n4500010184/20\n4500010184/200\n4500010563/360","6\n11\n17\n37\n26\n32\n7\n33","2026-09-15\n2024-12-18\n2024-12-18\n2025-01-13\n2025-02-12\n2025-11-05\n2025-11-05\n2026-02-05","2027-02-26\n2027-12-31\n2027-12-31\n2027-12-31\n2027-12-31\n2027-12-31\n2027-12-31\n2027-12-31","2026-11-01","-3","TBD","TBD","","0","STOP-SHIP","10004397-80 · 발주 전환(1차 PO 4500011928)","0","0","0","0","7","0","3","-3","2026-10-20","12","2026-11-06","2026-11-15","8","28.2","PO 6건 · 2~77주 · 최근 5주(26.06)",""],["42","42","0360-110-0188","SWITCH,MS27783-1M","MS27783-1M","EA","0","1","1","0","0","","0","0","-1","0","0","1","0","1","0","2026-11-15","","급행요청","신승희","주식회사 스마트라인","2025-12-19","18","2026-11-11","4500010563/140","18","2026-02-05","2026-10-30","2026-11-01","-1","","0","","0","1개 급행 요청","PR 10004004 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","12","2026-11-06","2026-11-15","1","38.1","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["43","43","0360-110-0192","SWITCH,MS27783-2K","MS27783-2K","EA","0","1","1","0","0","","0","0","-1","0","0","1","0","1","0","2026-11-15","","급행요청","신승희","주식회사 스마트라인","2025-12-19","18","2027-02-28","4500010563/160\n4500012089/690","18\n52","2026-02-05\n2026-10-08","2026-10-30\n2028-02-15","2026-11-01","-1","","0","","0","1개씩 급행 요청","10004277-1730 · 미발주(대기중) · 110일 경과","0","0","0","0","0","0","1","-1","2026-10-20","12","2026-11-06","2026-11-15","2","54.4","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 2건)",""],["44","44","0360-110-0194","SWITCH,47003","47003","EA","0","1","1","4","0","","0","4","3","0","0","1","0","1","0","2026-11-15","","입고완료","신승희","TTI,Inc.","2026-06-24","","입고완료","4500011336/10","14","2026-06-23","2027-01-27","입고완료","3","","0","","0","10/19 4ea 입고완료","10004277-1770 · 미발주(대기중) · 110일 경과","4","0","0","0","0","4","1","3","2026-10-20","12","2026-11-06","2026-11-15","1","4.9","PO 1건 · 5~5주 · 최근 5주(26.05)",""],["45","45","0360-120-0020","CIRCUIT BREAKER,MS3320-4","MS3320-4","EA","167","1104","1271","1016","0","","2943","3959","2688","1","1","7","461","477","1058","2026-11-15","","입고완료","신승희","Flame Enterprises","2024-09-27","1902-09-26","2026-10-30","4500008191/860\n4500008191/510","1453\n1490","2024-11-15\n2024-11-15","2026-07-30\n2026-09-18","입고완료","2688","","0","","0","10/30 1,453ea 반입완료 및 수검대기 - 생산관리 투입 확인*","PR 10003357 (등록일 자료 없음)","1016","0","0","0","0","1016","1271","-255","2026-10-20","12","2026-11-06","2026-11-15","1","11.8","PO 10건 · 3~49주 · 최근 7주(25.05)",""],["46","46","0400-110-0053","Knob, GP360-A1B1","GP360-A1B1","EA","0","5","5","8","0","","0","8","3","2","0","0","4","5","0","2026-11-30","","입고완료","이준영","KORRY ELEC (81590)","-","","입고완료","4500011148/10","7","2026-05-26","2026-10-30","입고완료","3","","0","","0","10/14 7ea 입고완료","PR 10004112 (등록일 자료 없음)","8","0","0","0","0","8","5","3","2026-10-20","27","2026-11-24","2026-11-30","1","19.6","PO 1건 · 20~20주 · 최근 20주(24.02)",""],["47","47","0400-110-0074","Knob,MSC288A1B2","MSC288A1B2","EA","0","1","1","0","0","","18","18","17","0","0","1","0","1","0","2026-11-15","","입고완료","신승희","Airtech International Inc","2026-06-24","","입고완료","미납 PO 없음","","-","N/A","입고완료","17","","0","","0","10/9 18ea 반입완료 및 수검중","10004277-1940 · 미발주(대기중) · 110일 경과","0","0","18","0","0","0","1","-1","2026-10-20","12","2026-11-06","2026-11-15","1","26.3","PO 1건 · 26~26주 · 최근 26주(26.03)",""],["48","48","0410-140-0170","POWER XMFR Transformer, 200-26502-01","200-26502-01","EA","0","1","1","0","0","","0","0","-1","0","0","1","0","1","0","2026-11-15","","입고불가","김지은","OECO","2026-09-01","10","2026-11-30","4500010372/10","25","2025-12-26","2026-12-08","2026-11-01","-1","2026-11-18","1","","0","결품 해소 12/25 예정, \n급행 요청 완료(11/18일 출하일정 단축)","10004411-60 · 이전 구매요청(발주 전환)","0","0","0","0","0","0","1","-1","2026-10-20","12","2026-11-06","2026-11-15","1","49.6","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["49","49","0425-110-0056","FEED THRU COVER,PC90117E-72-U","PC90117E-72-U","EA","8","8","16","0","0","","0","0","-16","0","0","3","8","0","16","2026-11-15","","입고불가","이준영","TE AMP Korea","2025-04-23","TBD","TBD","4500009914/90\n4500009914/380\n4500009914/390\n4500009914/400\n4500009914/410\n4500009914/540\n4500011767/520\n4500011767/530\n4500011767/540","216\n60\n60\n60\n60\n24\n48\n33\n16","2025-09-10\n2025-09-10\n2025-09-10\n2025-09-10\n2025-09-10\n2025-09-10\n2026-08-31\n2026-08-31\n2026-08-31","2026-12-15\n2027-03-30\n2027-03-30\n2027-03-30\n2027-03-30\n2027-03-30\n2027-08-28\n2027-08-28\n2027-08-28","2026-11-01","-16","2026-12-25","TBD","","0","결품 해소 12/25 예정, 급행 요청","PR 10003691 (등록일 자료 없음)","0","0","0","0","0","0","16","-16","2026-10-20","12","2026-11-06","2026-11-15","4","59.1","PO 2건 · 44~74주 · 최근 44주(24.10)",""],["50","50","0425-131-0033","SPLICE,TERMINAL JUNCTION,CONTACT TYPE","M81714/11-22D","EA","0","4","4","27","0","","0","27","23","1","0","0","0","4","0","2026-11-30","","입고완료","박소영(사관)","BDS(Boeing Distribution Service Inc","2026-06-16","24","입고완료","4500011957/410","24","2026-09-17","2026-09-30","입고완료","23","","0","","0","10/19 24ea 입고완료","10004258-280 · 발주 전환(1차 PO 4500011957)","27","0","0","0","0","27","4","23","2026-10-20","27","2026-11-24","2026-11-30","1","12.1","PO 1건 · 12~12주 · 최근 12주(24.08)",""],["51","51","0425-140-0093","RELAY,M83726/29-6002P","M83726/29-6002P","EA","5","0","5","0","0","","0","0","-5","0","0","1","10","0","0","2026-11-15","","입고불가","신승희","Airtech International Inc","2026-03-13","TBD","TBD","","","2026-08-21","N/A","2026-11-01","-5","TBD","TBD","","0","고객협의안대로 시중재고 확보하였으나, 최종불가판정","구매요청 미등록 (10월 1주차 미발주현황 기준)","0","0","0","4","0","0","5","-5","2026-10-20","12","2026-11-06","2026-11-15","","","L/T 이력 없음",""],["52","52","0425-290-0141","Terminal lug,BACT12M8-2","BACT12M8-2","EA","0","14","14","1","0","","0","1","-13","0","1","3","10","0","14","2026-11-15","","입고가능","신승희","Wesco Aircraft Ltd","-","TBD","TBD","미납 PO 없음","","-","N/A","2026-11-01","-13","","0","","0","기존 재고분 폐기처리 예정 및 재고수배 진행중","구매요청 미등록 (10월 1주차 미발주현황 기준)","1","0","0","1040","0","1","14","-13","2026-10-20","12","2026-11-06","2026-11-15","","23.1","PO 2건 · 7~39주 · 최근 39주(25.08) → 지금 발주 시 27.03.23 2027년(2026 매출 불가)","2027-03-23"],["53","53","0425-290-0150","Terminal lug, BACT12M2-2","BACT12M2-2","EA","0","7","7","4","0","","0","4","-3","0","0","3","3","0","7","2026-11-15","","입고완료","신승희","Wesco Aircraft Ltd","2026-06-10","TBD","TBD","4500009864/260\n4500009864/370","240\n200","2025-08-31\n2025-08-31","2026-09-15\n2027-03-15","입고완료","","","","","0","금년 입고 불가 품목 - 생산관리 투입 확인*","10004246-2140 · 미발주(대기중) · 124일 경과","4","0","0","0","0","4","7","-3","2026-10-20","12","2026-11-06","2026-11-15","2","6","PO 1건 · 6~6주 · 최근 6주(24.03)",""],["54","54","0425-290-0197","LUG,YAV8CL20790","YAV8CL20790","EA","0","22","22","0","0","","0","0","-22","0","0","2","0","0","22","2026-11-15","","입고불가","신승희","Airtech International Inc","2025-04-23","TBD","TBD","부적합","","2026-03-27","N/A","2026-11-01","-22","TBD","TBD","","0","제조사 확인중","구매요청 미등록 (10월 1주차 미발주현황 기준)","0","0","0","389","0","0","22","-22","2026-10-20","12","2026-11-06","2026-11-15","","21","PO 1건 · 21~21주 · 최근 21주(26.03) → 지금 발주 시 27.03.08 2027년(2026 매출 불가)","2027-03-08"],["55","55","0475-110-0025","SWITCH,INDICATOR,5M3007-011","5M3007-011","EA","11","0","11","0","3","","0","3","-8","2","0","0","12","0","9","2026-11-30","","입고가능","신승희","INTEGRATED PROCUREMENT TECHNOLOGIES","2024-09-27","9","12/11","NBBA-I-24-0680","","2024-11-18\n2024-11-18\n2024-11-18\n2024-11-18\n2024-11-18\n2024-11-18","2026-09-13\n2026-10-01\n2026-10-01\n2026-10-01\n2026-12-13\n2027-03-13","2026-11-16","-8","","0","","0","12/7부터 주당 6개 입고 가능\n단, 2주차 3개는 보잉에게 판매 필요\n15개까지 26년 매출 가능","PR 10003302 (등록일 자료 없음)","0","3","0","4","21","3","11","-8","2026-10-20","27","2026-11-24","2026-11-30","6","50.2","PO 4건 · 1~99주 · 최근 1주(26.06)",""],["56","56","0475-110-0044","SWITCH,INDICATOR,5M3007-001","5M3007-001","EA","8","0","8","0","0","","0","0","-8","0","0","1","13","3","0","2026-11-15","","입고가능","신승희","INTEGRATED PROCUREMENT TECHNOLOGIES","2023-12-18","20","2026-11-15","4500006457/20\n4500006543/20\n4500008200/70\n4500008200/30\n4500008200/60\n4500008200/90\n4500008201/20\n4500008201/10\n4500011169/10","5\n1\n12\n12\n12\n12\n5\n7\n49","2024-01-04","2026-02-10\n2026-07-31\n2026-09-13\n2026-10-01\n2026-10-01\n2026-12-13\n2027-03-13\n2027-05-13\n2027-09-03","2026-11-01","-8","","0","","0","10/30 20ea 선적전망","PR 10002875 (등록일 자료 없음)","0","0","0","0","3","0","8","-8","2026-10-20","12","2026-11-06","2026-11-15","8","112.6","PO 1건 · 113~113주 · 최근 113주(23.12)",""],["57","57","0475-110-0077","Indicator, switch, 280560","280560","EA","2","0","2","0","0","","0","0","-2","1","0","0","2","2","0","2026-11-30","","급행요청","신승희","ELECTRO COMM","-","","","NBBD-I-26-0097\nNBBD-I-25-0574","2","-","N/A","2026-11-16","-2","","0","","0","RTV(일정확인중) 미국배송완료되었으며 업데이트 대기중","","0","0","0","0","2","0","2","-2","2026-10-20","27","2026-11-24","2026-11-30","1","17.4","PO 2건 · 6~29주 · 최근 29주(25.01)",""],["58","58","0475-110-0099","PILOTS UTILITY LIGHT,723-1078-603M","723-1078-603M","EA","0","1","1","50","0","","0","50","49","0","0","1","0","1","0","2026-11-15","","입고완료","박형식","Pilot Shop","2026-06-24","","입고완료","미납 PO 없음","","-","N/A","입고완료","49","","0","","0","10/12 50ea 입고완료","10004277-2140 · 이전 구매요청(발주 전환)","50","0","0","0","0","50","1","49","2026-10-20","12","2026-11-06","2026-11-15","1","3","PO 1건 · 3~3주 · 최근 3주(26.09)",""],["59","59","0495-170-0070","FILTER,EMI,125VAC,200VDC,TREAD TYPE","M15733/27-0012","EA","0","4","4","1","0","","0","1","-3","1","0","0","0","4","0","2026-11-30","","입고불가","신승희","Airtech International Inc","2026-06-16","TBD","TBD","","26","2026-09-10","2026-11-15","2026-11-16","-3","TBD","TBD","","0","기발주건 취소, 50EA Spectrumcontrol 발주완료","10004258-310 · 발주 전환(1차 PO 4500011893)","1","0","0","0","0","1","4","-3","2026-10-20","27","2026-11-24","2026-11-30","1","5.4","PO 2건 · 3~7주 · 최근 7주(24.10)",""],["60","60","0591-130-0181","Shrinkable tube, black, 1/16inch","MMS809-0-1/16","FT","4.25","24.54","28.79","77.88","0","","0","77.88","49.08","3","10","5","65.52","19.12","26.29","2026-11-15","","입고완료","신승희","Wiremasters","-","","입고완료","미납 PO 없음","","-","N/A","입고완료","49.08","","0","","0","PR없음 → 투입완료","구매요청 미등록 (10월 1주차 미발주현황 기준)","77.88","0","0","0","0","77.88","28.79","49.08","2026-10-20","12","2026-11-06","2026-11-15","","9.4","PO 1건 · 9~9주 · 최근 9주(25.07) → 지금 발주 시 26.12.17 12월(매출 위험)","2026-12-17"],["61","61","0591-130-0604","IDENT SLEEVE,210-10213-252","210-10213-252","EA","0","0","0","1","0","","0","1","1","1","1","0","1","25","0","2026-11-24","","입고완료","신승희","","-","","입고완료","미납 PO 없음","","-","N/A","입고완료","1","","0","","0","PR없음 → 투입완료","구매요청 미등록 (10월 1주차 미발주현황 기준)","1","0","0","0","0","1","0","1","2026-10-20","21","2026-11-19","2026-11-24","","","L/T 이력 없음",""],["62","62","0591-130-0649","EXPANDABLE SLEEVE BROWN,130-053-3-1","130-053-3-1","FT","0","0","0","0","0","","0","0","0","0","1","0","15.42","15.42","0","2026-11-24","","입고완료","신승희","","-","","입고완료","","","-","N/A","입고완료","0","","0","","0","PR없음 → 투입완료","구매요청 미등록 (10월 1주차 미발주현황 기준)","0","0","0","0","0","0","0","0","2026-10-20","21","2026-11-19","2026-11-24","","","",""],["63","63","0591-133-0043","SOLDER SLEEVE M83519/3-07","M83519/3-7","EA","0","11","11","189","0","","0","189","178","0","0","1","0","11","0","2026-11-15","","입고완료","신승희","FDH Electronics","-","","입고완료","미납 PO 없음","","-","N/A","입고완료","178","","0","","0","10/22 200ea 입고완료","10004277-2280 · 미발주(RFQ 진행중) · 110일 경과","200","0","0","0","0","200","11","189","2026-10-20","12","2026-11-06","2026-11-15","1","15.9","PO 1건 · 16~16주 · 최근 16주(26.05)",""],["64","64","0591-140-0039","CABLE TIE,BLACK,MS3367-1-0","MS3367-1-0","EA","0","150","150","0","0","","0","0","-150","0","0","4","50","50","100","2026-11-15","","입고완료","신승희","Wesco Aircraft Ltd","2026-06-10","150","2026-11-15","미납 PO 없음","","2026-10-20","N/A","입고완료","0","","0","","0","재고수배中(휴니드 보유재고 폐기필요) - 생산관리 투입 확인*","10004246-2300 · 미발주(대기중) · 124일 경과 외 2건","0","0","0","5900","0","0","150","-150","2026-10-20","12","2026-11-06","2026-11-15","1","53.4","PO 2건 · 37~70주 · 최근 37주(25.08)",""],["65","65","0601-100-0239","WIRE,K20-3-C-307-003","K20-3-C-307-003","FT","0","0","0","0","0","","0","0","0","0","2","0","28","0","0","2026-11-24","","입고완료","신승희","","-","","입고완료","","","-","N/A","입고완료","0","","0","","0","PR없음 → 투입완료","10004246-2400 · 미발주(대기중) · 124일 경과 외 1건","0","0","0","0","0","0","0","0","2026-10-20","21","2026-11-19","2026-11-24","","","",""],["66","66","0601-100-0318","WIRE,55A6036-22-9/5-9","HS5460-2003","FT","0","2.8","2.8","0","0","","0","0","-2.8","0","0","1","0","0","2.8","2026-11-15","","입고가능","신승희","Wiremasters","2026-03-05","1905-06-22","2026-11-06","4500010933/40","2000","2025-10-15","2026-12-28","2026-11-01","-2.8","","0","","0","11/4 통관진행중","PR 10004091 (등록일 자료 없음)","0","0","0","0","0","0","2.8","-2.8","2026-10-20","12","2026-11-06","2026-11-15","1","62.7","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["67","67","0601-100-0658","WIRE,M22759/42-24-9","M22759/42-24-9","FT","0","0","0","0","100","","0","100","100","0","1","0","75.5","75.5","0","2026-11-24","","입고완료","신승희","Wiremasters","-","","입고완료","미납 PO 없음","","-","N/A","입고완료","100","","0","","0","PR없음 → 투입완료","구매요청 미등록 (10월 1주차 미발주현황 기준)","0","100","0","0","0","100","0","100","2026-10-20","21","2026-11-19","2026-11-24","","20.1","PO 2건 · 6~34주 · 최근 6주(26.02) → 지금 발주 시 27.03.02 2027년(2026 매출 불가)","2027-03-02"],["68","68","0601-100-0663","WIRE,M27500A18SM3U23","M27500A18SM3U23","FT","0","0","0","0","0","","0","0","0","0","1","0","8.6","8.6","0","2026-11-24","","입고완료","신승희","","-","","입고완료","","","-","N/A","입고완료","0","","0","","0","PR없음 → 투입완료","구매요청 미등록 (10월 1주차 미발주현황 기준)","0","0","0","0","0","0","0","0","2026-10-20","21","2026-11-19","2026-11-24","","","",""],["69","69","0605-180-0042","SHLD BRAID,20-036-50-BN","20-036-50-BN","FT","0","0","0","0","0","","0","0","0","0","3","0","22.58","22.58","0","2026-11-24","","입고완료","신승희","","-","","입고완료","","","-","N/A","입고완료","0","","0","","0","PR없음 → 투입완료","구매요청 미등록 (10월 1주차 미발주현황 기준)","0","0","0","0","0","0","0","0","2026-10-20","21","2026-11-19","2026-11-24","","","",""],["70","70","0790-100-0018","FAN ASSEMBLY,012627000","12627000","EA","0","1","1","0","0","","0","0","-1","1","0","0","0","0","1","2026-11-30","","입고불가","신승희","Airtech International Inc","2026-03-11","63","2026-12-30","4500010789/40","63","2026-03-30","2026-11-10","2026-11-16","-1","2026-12-30","63","","0","12/30 이내 입고","PR 10004106 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","27","2026-11-24","2026-11-30","1","32.1","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["71","71","0991-995-0546","SHRINK TUBE,1/8INCH,BLACK","M0-015-1816","\"","0","24","24","0","0","","0","0","-24","1","0","0","0","24","0","2026-11-30","","입고완료","신승희","","-","","","방산 재고","","-","N/A","입고완료","0","","0","","0","방산 재고 - 생산관리 투입 확인*","구매요청 미등록 (10월 1주차 미발주현황 기준)","0","0","0","0","0","0","24","-24","2026-10-20","27","2026-11-24","2026-11-30","","","",""],["72","72","3309-021-0007","PLATE ASSY,68A810538-1001","68A810538-1001","EA","0","30","30","28","0","","2","30","0","2","0","0","10","24","6","2026-11-30","","입고완료","박형식","대흥사(Dae Heung)","2024-09-27\n2026-09-18","2","2026-11-09","4500008042/2250\n4500011962/10","6\n4","2024-09-27\n2026-09-18","2026-08-03\n2027-05-13","입고완료","0","","0","","0","10/31 2ea 입고완료","10004249-480 · 이전 구매요청(발주 전환)","28","0","0","0","0","28","30","-2","2026-10-20","27","2026-11-24","2026-11-30","2","37.9","PO 5건 · 10~55주 · 최근 41주(24.10)",""],["73","73","3309-021-0010","BUS FUSE ,68A870846-5081(1001)","68A870846-5081","EA","12","0","12","11","0","","0","11","-1","1","0","0","10","6","6","2026-11-30","","입고완료","박형식","대흥사(Dae Heung)","-","","입고완료","4500008042/2860\n4500008042/460\n4500008042/2240\n4500008042/1280","24\n24\n23\n23","2024-09-27\n2024-09-27\n2024-09-27\n2024-09-27","2026-10-12\n2026-10-12\n2026-10-19\n2027-03-26","입고완료","-1","","0","","0","10/26 24ea 입고완료","PR 10003357 (등록일 자료 없음)","0","0","24","0","1","0","12","-12","2026-10-20","27","2026-11-24","2026-11-30","1","49.8","PO 2건 · 42~57주 · 최근 42주(24.04)",""],["74","74","3309-021-0011","BUS ASSY,68A870846-5083(1003)","68A870846-5083","EA","11","0","11","12","0","","0","12","1","1","0","0","11","6","6","2026-11-30","","입고완료","박형식","대흥사(Dae Heung)","-","","입고완료","4500008042/2850\n4500008042/450\n4500008042/2230\n4500008042/1270","24\n24\n23\n23","2024-09-27\n2024-09-27\n2024-09-27\n2024-09-27","2026-10-12\n2026-10-12\n2026-10-19\n2027-03-26","입고완료","1","","0","","0","10/26 24ea 입고완료","PR 10003357 (등록일 자료 없음)","0","0","24","0","0","0","11","-11","2026-10-20","27","2026-11-24","2026-11-30","1","49.8","PO 2건 · 42~57주 · 최근 42주(24.04)",""],["75","75","3309-021-0012","BUS FUSE ,68A870846-5085(1005)","68A870846-5085","EA","11","0","11","0","0","","24","24","13","1","0","0","10","6","6","2026-11-30","","입고완료","박형식","대흥사(Dae Heung)","-","","입고완료","4500008042/2840\n4500008042/440\n4500008042/2220\n4500008042/1260","24\n24\n23\n23","2024-09-27\n2024-09-27\n2024-09-27\n2024-09-27","2026-10-12\n2026-10-12\n2026-10-19\n2027-03-26","입고완료","13","","0","","0","10/21 24ea 반입완료 및 수검중","PR 10003357 (등록일 자료 없음)","0","0","24","0","0","0","11","-11","2026-10-20","27","2026-11-24","2026-11-30","1","49.8","PO 2건 · 42~57주 · 최근 42주(24.04)",""],["76","76","3309-021-0064","PANEL ASSY,68A810387-5081","68A810387-5081","EA","0","2","2","0","0","","0","0","-2","0","1","0","0","0","2","2026-11-24","","급행요청","박형식","대흥사(Dae Heung)","2026-03-05","2","2026-11-15","4500010849/20","2","2026-03-05","2026-10-10","2026-11-10","-2","","0","","0","기술자료 대기, 수주등록 대기로 인한 생산투입 대기중","PR 10004092 (등록일 자료 없음)","0","0","0","0","0","0","2","-2","2026-10-20","21","2026-11-19","2026-11-24","1","31.3","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["77","77","3309-021-0070","PANEL ASSY,74A801703-5081","74A801703-5081","EA","0","15","15","0","0","","4","4","-11","0","1","0","9","6","0","2026-11-24","","입고불가","박형식","대흥사(Dae Heung)","2026-06-09","4","2026-12-25","4500011962/170\n4500011812/130","24\n38","2026-09-18\n2026-09-03","2027-01-06\n2027-03-03","2026-11-10","-11","2027-03-01","24","","0","10/31 4ea 입고완료, 나머지 `27.3.1 입고전망","10004240-150 · 발주 전환(1차 PO 4500011812)","0","0","0","0","0","0","15","-15","2026-10-20","21","2026-11-19","2026-11-24","2","19.2","PO 4건 · 11~28주 · 최근 20주(26.01)",""],["78","78","3309-021-0954","Chassis,74A801906-1001","74A801906-1001","EA","0","0","0","0","0","","0","0","0","0","1","0","5","8","2","2026-11-24","","입고완료","박형식","대흥사(Dae Heung)","-","","입고완료","4500008428/80\n4500008522/100\n4500010258/70\n4500011130/20\n4500007726/90","28\n24\n40\n30\n17","2024-12-19\n2025-01-16\n2025-09-26\n2026-04-08\n2024-08-27","2026-08-27\n2026-10-30\n2026-10-30\n2027-01-29\n2027-11-05","입고완료","0","","0","","0","10/19 10ea 입고완료","PR 10003454 (등록일 자료 없음)","0","0","0","0","0","0","0","0","2026-10-20","21","2026-11-19","2026-11-24","5","63.1","PO 2건 · 32~94주 · 최근 94주(24.12)",""],["79","79","3309-021-0955","Chassis,74A801692-1001","74A800692-1001","EA","0","32","32","11","0","","15","26","-6","0","2","0","1","15","17","2026-11-24","","입고완료","박형식","대흥사(Dae Heung)","2025-01-16\n2026-04-08\n2026-04-08\n2024-12-19\n2025-02-27\n2025-09-26\n2025-09-26","27","2026-10-30","4500008522/90\n4500011130/30\n4500011130/60\n4500008428/70\n4500009012/30\n4500010144/10\n4500010144/60","35\n29\n2\n21\n11\n1\n5","2025-01-16\n2026-04-08\n2026-04-08\n2024-12-19\n2025-02-27\n2025-09-26\n2025-09-26","2026-08-31\n2027-01-29\n2027-04-30\n2027-11-12\n2028-04-17\n2028-08-09\n2028-11-08","입고완료","0","","0","","0","10/31 15ea 입고완료","PR 10003482 (등록일 자료 없음)","5","0","15","5","0","5","32","-27","2026-10-20","21","2026-11-19","2026-11-24","7","57.4","PO 3건 · 32~89주 · 최근 89주(25.01)",""],["80","80","3309-021-0975","CHASSIS ASSY, 68A810360-1005","68A810360-1005","EA","0","2","2","0","0","","2","2","0","0","0","1","0","2","0","2026-11-15","","입고완료","박형식","대흥사(Dae Heung)","-","","입고완료","4500010116/10","2","2025-08-18","2026-10-30","입고완료","0","","0","","0","10/21 2ea 반입완료 및 수검중","PR 10003847 (등록일 자료 없음)","0","0","2","0","0","0","2","-2","2026-10-20","12","2026-11-06","2026-11-15","1","62.6","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["81","81","3309-021-1005","PLATE,68A810538-2003","68A810538-2003","EA","0","30","30","28","0","","0","28","-2","2","0","0","10","24","6","2026-11-30","","입고완료","박형식","대흥사(Dae Heung)","2026-06-11","3","2026-10-13","4500008042/1310\n4500011962/60","8\n2","2024-09-27\n2026-09-18","2027-03-26\n2027-05-13","입고완료","","","","","0","`27.3월 8ea 입고전망 - 생산관리 투입 확인*","10004249-530 · 이전 구매요청(발주 전환)","28","0","0","0","0","28","30","-2","2026-10-20","27","2026-11-24","2026-11-30","2","36","PO 5건 · 23~55주 · 최근 30주(24.10)",""],["82","82","3309-021-1006","PLATE,68A810538-5085(2005)","68A810538-5085","EA","0","30","30","28","0","","6","34","4","2","0","0","10","24","6","2026-11-30","","입고완료","박형식","대흥사(Dae Heung)","2024-09-27\n2026-09-18","8","2026-11-09","4500008042/2070\n4500011962/70","8\n2","2024-09-27\n2026-09-18","2026-08-03\n2027-05-13","입고완료","4","","0","","0","10/31 6ea 입고완료","10004249-540 · 이전 구매요청(발주 전환)","28","0","0","0","0","28","30","-2","2026-10-20","27","2026-11-24","2026-11-30","2","37.2","PO 5건 · 24~54주 · 최근 33주(24.10)",""],["83","83","3309-021-1014","LIGHT PLATE,68B818059-217","68B818059-217","EA","2","30","32","0","0","","0","0","-32","2","0","0","12","24","6","2026-11-30","","급행요청","박소영(사관)","BOEING(BFM)","2023-12-18","15","","4500006908/20\n4500007124/40\n4500008616/10\n4500011623/20","4\n3\n13\n4","2024-04-01\n2024-04-30\n2025-02-11\n2026-08-11","2026-12-31\n2026-12-31\n2026-12-31\n2027-05-13","2026-11-16","-32","2026-11-06","15","","0","BFM 자재 / CPC 요청 15개 / BOEING 17개PUSH\nBFM으로 받을 수량은 PO# 2825203 4개가 끝입니다.\n(1U27 4 EA)\n1U47용 L/P는 전량 자체발주입니다.\n\n보잉쪽 소통 지원으로 CPC와 이야기를 해보았으나,\n휴니드에서 불량 반출을 한번에 했으니 CPC에서도 한번에 반출해야 한다는 입장 고수중이며, 일부 품목 미완료로 11월 말정도에나 선적 가능하다고 함.\n\n11/6 15ea 선적예정","PR 10003383 (등록일 자료 없음)","0","0","0","15","0","0","32","-32","2026-10-20","27","2026-11-24","2026-11-30","","61.6","PO 5건 · 23~95주 · 최근 27주(25.03) → 지금 발주 시 27.12.17 2027년(2026 매출 불가)","2027-12-17"],["84","84","3309-021-1024","MOUNTING PLATE,68A810783-5081","68A810783-5081","EA","0","3","3","0","0","","14","14","11","2","0","0","2","3","4","2026-11-30","","입고완료","박형식","대흥사(Dae Heung)","-","","입고완료","4500008042/160\n4500008042/2010\n4500008042/990\n4500011962/90","2\n12\n12\n2","2024-09-27\n2024-09-27\n2024-09-27\n2026-09-18","2026-09-14\n2026-10-05\n2027-03-26\n2027-04-08","입고완료","11","","0","","0","10/21 14ea 입고완료","10004249-570 · 이전 구매요청(발주 전환)","0","0","14","0","0","0","3","-3","2026-10-20","27","2026-11-24","2026-11-30","2","84.1","PO 2건 · 66~102주 · 최근 66주(24.09)",""],["85","85","3309-021-1034","EMI FILTER PLATE,74A980063-5004(5081)","74A980063-5004","EA","0","2","2","10","0","","0","10","8","1","0","0","0","2","0","2026-11-30","","입고완료","박형식","대흥사(Dae Heung)","-","14","입고완료","4500011589/30","14","2026-07-31","2026-09-30","입고완료","8","","0","","0","10/21 10ea 입고완료","PR 10004258 (등록일 자료 없음)","10","0","0","0","0","10","2","8","2026-10-20","27","2026-11-24","2026-11-30","1","32.3","PO 1건 · 32~32주 · 최근 32주(24.08)",""],["86","86","3309-021-1060","LIGHT PLATE,74B800070-827","74B800070-827","EA","0","23","23","20","0","","0","20","-3","0","1","0","4","16","4","2026-11-24","","입고완료","박소영(사관)","BOEING(BFM)","2026-07-02","3","","미납 PO 없음","","-","N/A","입고완료","","","","","0","미발주 / BOEING PUSH - 생산관리 투입 확인*","10004298-20 · 미발주(대기중) · 102일 경과","20","0","0","1","0","20","23","-3","2026-10-20","21","2026-11-19","2026-11-24","","30.3","PO 5건 · 0~103주 · 최근 47주(25.09) → 지금 발주 시 27.05.12 2027년(2026 매출 불가)","2027-05-12"],["87","87","3309-021-1065","LIGHT PLATE,68B818043-269","68B818043-269","EA","0","2","2","1","0","","0","1","-1","0","1","0","0","0","2","2026-11-24","","입고가능","김지은","Control Products Corporation","2026-03-05","1","2026-10-30","4500011063/10","1","2026-03-05","2026-10-30","2026-11-10","-1","2026-11-04","1","","0","11/04 1ea 선적 예정","PR 10004092 (등록일 자료 없음)","1","0","0","0","0","1","2","-1","2026-10-20","21","2026-11-19","2026-11-24","1","34.1","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["88","88","3309-021-1067","LIGHT PLATE,74B800070-529","74B800070-529","EA","0","15","15","14","0","","24","38","23","0","1","0","9","6","0","2026-11-24","","입고완료","박소영(사관)","BOEING(BFM)","2026-06-10","1","2026-12-15","4500011416/150\n4500011416/160","27\n24","2026-07-07\n2026-07-07","2026-12-31\n2026-12-31","입고완료","23","","0","","0","결품 해소 12/15 예정, 급행 요청 \n11/3 24ea 입고완료","PR 10004240 (등록일 자료 없음)","14","0","0","0","0","14","15","-1","2026-10-20","21","2026-11-19","2026-11-24","2","24.8","PO 8건 · 0~81주 · 최근 7주(26.07)",""],["89","89","3309-021-1142","LIGHT PLATE,68B818059-249","68B818059-249","EA","2","0","2","0","0","","0","0","-2","0","0","1","1","0","2","2026-11-15","","급행요청","박소영(사관)","BOEING(BFM)","2024-07-23","1","2026-12-15","4500007567/10","2","2024-08-07","2026-12-31","2026-11-01","-2","","0","","0","결품 해소 12/15 예정, 급행 요청","PR 10003233 (등록일 자료 없음)","0","0","0","0","0","0","2","-2","2026-10-20","12","2026-11-06","2026-11-15","1","1.3","PO 1건 · 1~1주 · 최근 1주(23.02)",""],["90","90","3309-021-1151","PLATE ASSY,68R812604-1001","68R812604-1001","EA","0","2","2","0","0","","0","0","-2","0","1","0","0","2","0","2026-11-24","","급행요청","박형식","대흥사(Dae Heung)","2026-08-20","2","2026-12-25","","","2026-10-20","N/A","2026-11-10","-2","","0","","0","결품 해소 12/25 예정, 급행 요청","10004377-430 · 미발주(대기중) · 53일 경과","0","0","0","0","0","0","2","-2","2026-10-20","21","2026-11-19","2026-11-24","1","29.9","PO 1건 · 30~30주 · 최근 30주(24.08)",""],["91","91","3309-021-1152","PLATE,68R812604-2003","68R812604-2003","EA","0","2","2","0","0","","0","0","-2","0","1","0","0","2","0","2026-11-24","","급행요청","박형식","대흥사(Dae Heung)","2026-08-20","2","2026-12-25","","","2026-10-20","N/A","2026-11-10","-2","","0","","0","결품 해소 12/25 예정, 급행 요청","10004377-440 · 미발주(대기중) · 53일 경과","0","0","0","0","0","0","2","-2","2026-10-20","21","2026-11-19","2026-11-24","1","29.9","PO 1건 · 30~30주 · 최근 30주(24.08)",""],["92","92","3309-021-1911","LIGHT PLATE,74B800070-915","74B800070-915","EA","1","0","1","0","0","","0","0","-1","0","1","0","2","0","0","2026-11-24","","급행요청","박소영(사관)","BOEING(BFM)","2024-12-19","1","2026-12-15","4500010034/100\n4500008524/100\n4500008804/40\n4500011416/70","46\n15\n14\n17","2025-09-26\n2025-02-03\n2025-03-12\n2026-07-07","2026-07-15\n2026-12-31\n2026-12-31\n2026-12-31","2026-11-10","-1","","0","","0","결품 해소 12/15 예정, 급행 요청","PR 10003893 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","21","2026-11-19","2026-11-24","4","59.6","PO 8건 · 1~93주 · 최근 61주(25.03)",""],["93","93","3309-021-2080","ID PLATE,68A890347-2019","68A890347-2019","EA","6","12","18","0","0","","0","0","-18","1","0","0","6","6","12","2026-11-30","","입고가능","이민정","BHE (Bill Helbling Enterprises)","-","18","2026-11-10","","","-","N/A","2026-11-16","-18","2026-11-10","18","","0","11/4 18ea 통관진행중","구매요청 미등록 (10월 1주차 미발주현황 기준)","0","0","0","0","0","0","18","-18","2026-10-20","27","2026-11-24","2026-11-30","","40.4","PO 1건 · 40~40주 · 최근 40주(24.11) → 지금 발주 시 27.07.22 2027년(2026 매출 불가)","2027-07-22"],["94","94","3309-021-7002","SPACER,ST4M138-04-34,OPEN BID","ST4M138-04-34","EA","0","108","108","127","0","","0","127","19","1","3","0","40","92","56","2026-11-24","","입고완료","박형식","대흥사(Dae Heung)","2026-08-20","","입고완료","4500008042/2280\n4500008042/1080\n4500009455/30\n4500008272/10\n4500009153/30","48\n48\n12\n10\n9","2024-09-27\n2024-09-27\n2025-04-25\n2024-11-22\n2025-04-08","2026-10-19\n2027-03-26\n2027-03-26\n2027-06-04\n2027-10-29","입고완료","19","","0","","0","10/13 22ea 입고완료","10004377-880 · 미발주(대기중) · 53일 경과","127","0","0","0","0","127","108","19","2026-10-20","21","2026-11-19","2026-11-24","4","30.1","PO 12건 · 6~48주 · 최근 48주(25.09)",""],["95","95","3309-021-7039","GROMMET,NAS557-12A","NAS557-12A","EA","11","0","11","0","0","","0","0","-11","0","0","2","13","7","2","2026-11-15","","입고가능","박소영(사관)","BDS(Boeing Distribution Service Inc","-","67","2026-10-23","","","-","N/A","2026-11-01","-11","","0","","0","67ea 전산문제 해결중","","0","0","0","67","0","0","11","-11","2026-10-20","12","2026-11-06","2026-11-15","1","19.1","PO 3건 · 10~24주 · 최근 24주(24.12)",""],["96","96","3309-047-0014","BOX ASSY,145E2227-1(5081)","145E2227-1","EA","0","2","2","0","0","","2","2","0","1","0","0","0","2","1","2026-11-30","","입고완료","박형식","대흥사(Dae Heung)","2026-08-12","TBD","TBD","","","2026-10-20","N/A","입고완료","0","","0","","0","10/31 2ea 입고완료","10004350-10 · 미발주(대기중) · 61일 경과 외 1건","0","0","0","0","0","0","2","-2","2026-10-20","27","2026-11-24","2026-11-30","","41.4","PO 2건 · 24~58주 · 최근 58주(23.12) → 지금 발주 시 27.07.29 2027년(2026 매출 불가)","2027-07-29"],["97","97","3309-047-0414","LIGHTING CONTROL PANEL ASSEMBLY","791E2532-5101","EA","0","6","6","0","0","","0","0","-6","0","1","0","0","0","6","2026-11-24","","입고가능","박형식","대흥사(Dae Heung)","2026-02-05\n2026-02-05","11","2026-11-09","4500010657/20\n4500010657/10","11\n5","2026-02-05\n2026-02-05","2026-10-19\n2026-11-09","2026-11-10","-6","","0","","0","11/23 11ea 입고전망","PR 10004056 (등록일 자료 없음)","0","0","0","0","0","0","6","-6","2026-10-20","21","2026-11-19","2026-11-24","2","36.6","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["98","98","3309-047-0415","ASSY, PANEL BLANK ASSY 724E3448-5083","724E3448-5083","EA","0","5","5","12","0","","0","12","7","1","0","0","0","5","0","2026-11-30","","입고완료","박형식","대흥사(Dae Heung)","-","5","입고완료","4500010722/20","12","2026-02-09","2026-09-30","입고완료","7","","0","","0","10/19 12ea 입고완료","PR 10004083 (등록일 자료 없음)","12","0","0","0","0","12","5","7","2026-10-20","27","2026-11-24","2026-11-30","1","33.3","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["99","99","3309-047-0517","BOX/COVER/BRACKET 125E2405-5103","125E2405-5103","EA","1","0","1","0","0","","0","0","-1","0","0","1","1","0","1","2026-11-15","","급행요청","박형식","대흥사(Dae Heung)","2026-06-16","1","2026-11-17","4500010508/20\n4500011962/870\n4500011962/880\n4500011963/580","2\n4\n2\n6","2025-08-12\n2026-09-18\n2026-09-18\n2026-09-18","2026-11-02\n2026-11-30\n2028-01-26\n2028-05-22","2026-11-01","-1","","0","","0","결품 해소 11/17 예정, 급행 요청","10004257-3390 · 이전 구매요청(발주 전환)","0","0","0","0","0","0","1","-1","2026-10-20","12","2026-11-06","2026-11-15","3","40.7","PO 2건 · 37~44주 · 최근 44주(24.03)",""],["100","100","3309-047-0518","BOX/COVER/BRACKET 125E2406-5103","125E2406-5103","EA","1","0","1","0","0","","0","0","-1","0","0","1","1","0","1","2026-11-15","","급행요청","박형식","대흥사(Dae Heung)","2026-06-16","1","2026-11-17","4500010508/30\n4500011962/890\n4500011962/900\n4500011963/590","2\n4\n2\n6","2025-08-12\n2026-09-18\n2026-09-18\n2026-09-18","2026-11-02\n2026-11-30\n2028-01-26\n2028-05-22","2026-11-01","-1","","0","","0","결품 해소 11/17 예정, 급행 요청","10004257-3400 · 이전 구매요청(발주 전환)","0","0","0","0","0","0","1","-1","2026-10-20","12","2026-11-06","2026-11-15","3","40.7","PO 2건 · 37~44주 · 최근 44주(24.03)",""],["101","101","3309-047-0529","CHASSIS,125E2205-5105","125E2205-5105","EA","0","3","3","5","0","","0","5","2","1","0","0","0","3","0","2026-11-30","","입고완료","박형식","대흥사(Dae Heung)","-","3","입고완료","4500009600/410\n4500009600/400\n4500009600/390\n4500009600/380\n4500009600/360\n4500009600/370","7\n10\n10\n10\n10\n10","2025-07-07\n2025-07-07\n2025-07-07\n2025-07-07\n2025-07-07\n2025-07-07","2026-08-17\n2027-11-08\n2028-10-02\n2029-08-06\n2030-06-03\n2030-06-03","입고완료","2","","0","","0","10/19 7ea 입고완료","PR 10003691 (등록일 자료 없음)","5","3","0","0","0","8","3","5","2026-10-20","27","2026-11-24","2026-11-30","6","57.1","PO 1건 · 57~57주 · 최근 57주(25.07)",""],["102","102","3309-047-0531","PDP1,125E2401-5105","125E2401-5105","EA","0","1","1","0","0","","0","0","-1","0","0","1","0","0","1","2026-10-30","CMEP22","입고불가","박형식","대흥사(Dae Heung)","2025-05-12","3","2026-11-02","4500009600/1030","58","2025-07-07","2026-09-14","2026-10-16","-1","2026-11-23","3","","0","11/23 3ea 입고전망 - 입고불가로 변경","PR 10003719 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","1","47.4","PO 1건 · 47~47주 · 최근 47주(25.07)",""],["103","103","3309-047-0532","PDP2,125E2402-5105","125E2402-5105","EA","0","1","1","0","0","","0","0","-1","0","0","1","0","0","1","2026-10-30","CMEP23","입고불가","박형식","대흥사(Dae Heung)","2025-05-12","3","2026-11-02","4500009600/1290\n4500009600/1280\n4500009600/1270\n4500009600/1260","13\n15\n15\n15","2025-07-07\n2025-07-07\n2025-07-07\n2025-07-07","2026-08-31\n2027-04-28\n2028-06-28\n2029-09-26","2026-10-16","-1","2026-11-23","3","","0","11/23 3ea 입고전망 - 입고불가로 변경","PR 10003796 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","4","47.4","PO 1건 · 47~47주 · 최근 47주(25.07)",""],["104","104","3309-047-0546","CHASSIS,125E2203-5111","125E2203-5111","EA","0","1","1","0","0","","0","0","-1","1","0","0","0","1","0","2026-10-30","FAI","급행요청","박형식","대흥사(Dae Heung)","2025-04-23","3","2026-11-09","4500009600/950\n4500009600/940\n4500009600/930\n4500009600/920\n4500009600/910","8\n10\n10\n10\n10","2025-07-07\n2025-07-07\n2025-07-07\n2025-07-07\n2025-07-07","2027-03-08\n2027-11-08\n2028-10-02\n2029-08-06\n2030-06-03","2026-10-16","-1","","0","","0","11/9 3ea 입고전망","PR 10003691 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","5","39.6","PO 1건 · 40~40주 · 최근 40주(25.07)",""],["105","105","3309-047-0602","CHASSIS,844E2032-5101","844E2032-5101","EA","0","1","1","0","0","","3","3","2","0","1","0","0","1","0","2026-10-30","FAI","입고완료","박형식","대흥사(Dae Heung)","-","1","입고완료","4500008587/20\n4500011754/10","17\n6","2025-01-10\n2026-08-31","2026-10-26\n2028-06-30","입고완료","2","","0","","0","10/21 3ea 반입완료 및 수검중","PR 10004384 (등록일 자료 없음)","0","0","3","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","2","94.5","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 2건)",""],["106","106","3309-047-0603","CHASSIS,844E2032-5104","844E2032-5104","EA","0","1","1","2","0","","0","2","1","0","1","0","1","0","0","2026-10-30","","입고완료","박형식","대흥사(Dae Heung)","-","","입고완료","4500008587/10","14","2025-01-10","2026-09-28","입고완료","1","","0","","0","10/12 3ea 입고완료","PR 10003478 (등록일 자료 없음)","2","0","0","0","0","2","1","1","2026-10-20","-4","2026-10-30","2026-10-30","1","89.4","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["107","107","3309-047-0607","CHASSIS,844E2329-5102","844E2329-5102","EA","0","1","1","2","0","","14","16","15","1","0","0","0","1","0","2026-10-30","","입고완료","박형식","대흥사(Dae Heung)","-","","입고완료","4500008587/90","17","2025-01-10","2026-09-30","입고완료","15","","0","","0","10/12 3ea 입고완료","PR 10003478 (등록일 자료 없음)","2","1","7","0","0","3","1","2","2026-10-20","-4","2026-10-30","2026-10-30","1","89.7","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["108","108","3309-047-0608","CHASSIS,844E3055-5101","844E3055-5101","EA","0","1","1","2","0","","0","2","1","1","0","0","1","0","0","2026-10-30","","입고완료","박형식","대흥사(Dae Heung)","-","","입고완료","4500008587/80","14","2025-01-10","2026-09-28","입고완료","1","","0","","0","10/12 3ea 입고완료","PR 10003478 (등록일 자료 없음)","2","1","0","0","0","3","1","2","2026-10-20","-4","2026-10-30","2026-10-30","1","89.4","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["109","109","3309-047-0611","CHASSIS,858E2160-5101","858E2160-5101","EA","0","2","2","0","0","","0","0","-2","0","1","0","0","2","0","2026-10-30","FAI","급행요청","박형식","대흥사(Dae Heung)","2025-12-23","2","2026-10-30","4500010564/160","17","2025-12-23","2026-09-21","2026-10-16","-2","","0","","0","11/9 2ea 입고전망(기술이슈해결중)","PR 10004007 (등록일 자료 없음)","0","0","0","0","0","0","2","-2","2026-10-20","-4","2026-10-30","2026-10-30","1","38.9","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["110","110","3309-047-0612","CHASSIS,858E2411-5101","858E2411-5101","EA","0","1","1","0","0","","0","0","-1","0","0","1","0","1","0","2026-10-30","FAI","급행요청","박형식","대흥사(Dae Heung)","2025-12-23","1","2026-10-30","4500010564/170","17","2025-12-23","2026-10-19","2026-10-16","-1","","0","","0","11/9 1ea 입고전망(PPR승인시)","PR 10004007 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","1","42.9","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["111","111","3309-047-0613","CHASSIS,858E2411-5103","858E2411-5103","EA","0","1","1","0","0","","0","0","-1","0","0","1","0","1","0","2026-10-30","FAI","급행요청","박형식","대흥사(Dae Heung)","2025-12-23","1","2026-10-30","4500010564/180","17","2025-12-23","2026-10-19","2026-10-16","-1","","0","","0","11/9 1ea 입고전망(PPR승인시)","PR 10004007 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","1","42.9","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["112","112","3309-047-0616","CHASSIS,858E2424-5101","858E2424-5101","EA","0","1","1","0","0","","0","0","-1","0","0","1","0","1","0","2026-10-30","FAI","급행요청","박형식","대흥사(Dae Heung)","2025-12-23","1","2026-10-30","4500010564/210","17","2025-12-23","2026-09-30","2026-10-16","-1","","0","","0","11/9 1ea 입고전망(PPR승인시)","PR 10004007 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","1","40.1","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["113","113","3309-047-0617","CHASSIS,858E2424-5103","858E2424-5103","EA","0","1","1","0","0","","0","0","-1","0","0","1","0","1","0","2026-10-30","FAI","급행요청","박형식","대흥사(Dae Heung)","2025-12-23","1","2026-10-30","4500010564/220","17","2025-12-23","2026-09-30","2026-10-16","-1","","0","","0","11/9 1ea 입고전망(PPR승인시)","PR 10004007 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","1","40.1","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["114","114","3309-047-0618","CHASSIS,858E2504-5101","858E2504-5101","EA","0","1","1","0","0","","3","3","2","0","0","1","0","0","1","2026-10-30","FAI","입고완료","박형식","대흥사(Dae Heung)","2025-12-23","1","2026-10-30","4500010564/230","17","2025-12-23","2026-09-30","입고완료","2","","0","","0","11/9 1ea 입고전망(PPR승인시)\n10/30 3ea 입고완료","PR 10004007 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","1","40.1","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["115","115","3309-047-0619","CHASSIS,858E3314-5101","858E3314-5101","EA","0","1","1","2","0","","0","2","1","0","1","0","0","1","0","2026-10-30","FAI","입고완료","박형식","대흥사(Dae Heung)","-","","입고완료","4500010564/240","17","2025-12-23","2026-09-30","입고완료","1","","0","","0","10/13 2ea 입고완료","PR 10004007 (등록일 자료 없음)","2","0","1","0","0","2","1","1","2026-10-20","-4","2026-10-30","2026-10-30","1","40.1","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["116","116","3309-047-0620","CHASSIS,858E3314-5103","858E3314-5103","EA","0","1","1","2","0","","0","2","1","0","1","0","0","1","0","2026-10-30","","입고완료","박형식","대흥사(Dae Heung)","-","","입고완료","4500010564/250","16","2025-12-23","2026-09-30","입고완료","1","","0","","0","10/12 1ea 입고완료","PR 10004007 (등록일 자료 없음)","1","0","2","0","0","1","1","0","2026-10-20","-4","2026-10-30","2026-10-30","1","40.1","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["117","117","3309-047-0623","CHASSIS,858E2329-5101","858E2329-5101","EA","0","1","1","0","0","","0","0","-1","1","0","0","1","0","0","2026-10-30","FAI","급행요청","박형식","대흥사(Dae Heung)","2025-12-23","1","2026-10-30","4500010564/280\n4500011754/30","15\n2","2025-12-23\n2026-08-31","2026-09-30\n2029-02-28","2026-10-16","-1","","0","","0","11/9 1ea 입고전망(PPR승인시)","PR 10004007 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","3","85.2","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 2건)",""],["118","118","3309-047-0624","CHASSIS,858E2402-5101","858E2402-5101","EA","0","1","1","0","0","","0","0","-1","0","0","1","0","0","1","2026-10-30","FAI","급행요청","박형식","대흥사(Dae Heung)","2025-12-23","1","2026-10-30","4500010564/290","17","2025-12-23","2026-10-19","2026-10-16","-1","","0","","0","11/9 1ea 입고전망(PPR승인시)","PR 10004007 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","1","42.9","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["119","119","3309-047-0625","CHASSIS,858E2401-5101","858E2401-5101","EA","0","1","1","0","0","","0","0","-1","0","0","1","0","0","1","2026-10-30","FAI","급행요청","박형식","대흥사(Dae Heung)","2025-12-23","1","2026-10-30","4500010564/300","17","2025-12-23","2026-10-19","2026-10-16","-1","","0","","0","11/9 1ea 입고전망(PPR승인시)","PR 10004007 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","1","42.9","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["120","120","3309-047-0626","CHASSIS,858E1605-5101","858E1605-5101","EA","0","1","1","0","0","","0","0","-1","1","0","0","0","1","0","2026-10-30","FAI","급행요청","박형식","대흥사(Dae Heung)","2025-12-23","1","2026-10-30","4500010564/310","17","2025-12-23","2026-09-28","2026-10-16","-1","","0","","0","11/9 1ea 입고전망(PPR승인시)","PR 10004007 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","2","39.9","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["121","121","3309-047-0627","CHASSIS,858E3048-5101","858E3048-5101","EA","0","1","1","0","0","","6","6","5","1","0","0","0","1","0","2026-10-30","FAI","입고완료","박형식","대흥사(Dae Heung)","-","1","입고완료","4500010564/320","17","2025-12-23","2026-09-28","입고완료","5","","0","","0","10/21 3ea 반입완료 및 수검중","PR 10004007 (등록일 자료 없음)","0","0","3","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","1","39.9","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["122","122","3309-047-0635","CHASSIS,844E2313-5103","844E2313-5103","EA","0","1","1","0","0","","0","0","-1","0","0","1","0","1","0","2026-10-30","FAI","급행요청","박형식","대흥사(Dae Heung)","2025-12-19","1","2026-10-30","4500010564/90","17","2025-12-23","2026-10-26","2026-10-16","-1","","0","","0","11/9 1ea 입고전망(PPR승인시)","PR 10004004 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","1","43.9","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["123","123","3309-047-0637","CHASSIS,844E2371-5101","844E2371-5101","EA","0","1","1","0","0","","0","0","-1","0","0","1","0","1","0","2026-10-30","FAI","급행요청","박형식","대흥사(Dae Heung)","2025-12-19","1","2026-10-30","4500010564/110","17","2025-12-23","2026-09-28","2026-10-16","-1","","0","","0","11/9 1ea 입고전망(PPR승인시)","PR 10004004 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","1","39.9","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["124","124","3309-047-0640","CHASSIS,858E2315-5101","858E2315-5101","EA","0","1","1","3","0","","0","3","2","0","0","1","0","1","0","2026-10-30","FAI","입고완료","박형식","대흥사(Dae Heung)","-","1","입고완료","4500010564/140","17","2025-12-23","2026-10-30","입고완료","2","","0","","0","10/12 3ea 입고완료","PR 10004004 (등록일 자료 없음)","3","0","0","0","0","3","1","2","2026-10-20","-4","2026-10-30","2026-10-30","1","44.4","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["125","125","3309-047-0641","CHASSIS,858E2322-5101","858E2322-5101","EA","0","1","1","0","0","","0","0","-1","0","0","1","0","1","0","2026-10-30","FAI","입고불가","박형식","대흥사(Dae Heung)","2025-12-19","1","2026-10-30","4500010564/150","17","2025-12-23","2026-09-30","2026-10-16","-1","2026-11-23","1","","0","11/23 1ea 입고전망(PPR승인시) - 입고불가로 변경","PR 10004004 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","1","40.1","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["126","126","3309-047-0643","CHASSIS,844E2424-5013","844E2424-5013","EA","0","1","1","0","0","","0","0","-1","0","0","1","0","0","1","2026-10-30","FAI","급행요청","박형식","대흥사(Dae Heung)","2026-03-05","1","2026-10-30","4500010849/10","5","2026-03-05","2026-10-12","2026-10-16","-1","","0","","0","11/9 1ea 입고전망(재작업진행)","PR 10004091 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","1","31.6","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["127","127","3309-047-0644","CHASSIS,125E3025-5101","125E3025-5101","EA","0","1","1","0","0","","4","4","3","1","0","0","0","0","1","2026-10-30","FAI","입고완료","박형식","대흥사(Dae Heung)","2026-03-11\n2026-03-11\n2026-03-11\n2026-03-11\n2026-03-11","1","2026-10-30","4500010723/10\n4500010723/20\n4500010723/30\n4500010723/40\n4500010723/50","12\n12\n12\n12\n12","2026-03-11\n2026-03-11\n2026-03-11\n2026-03-11\n2026-03-11","2026-10-30\n2027-06-02\n2028-09-06\n2029-09-05\n2030-09-04","입고완료","3","","0","","0","10/31 4ea 입고완료","10004445-1790 · 미발주(대기중) · 25일 경과","0","0","0","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","1","33.3","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["128","128","3309-047-0657","CHASSIS,858E2119-5101","858E2119-5101","EA","0","3","3","0","0","","0","0","-3","1","0","0","0","1","2","2026-10-30","FAI","입고불가","박형식","대흥사(Dae Heung)","2026-08-25","3","2027-02-26","4500011754/40\n4500011754/50\n4500011754/60\n4500011754/70","3\n2\n7\n4","2026-08-31\n2026-08-31\n2026-08-31\n2026-08-31","2027-02-26\n2027-02-26\n2027-08-31\n2028-10-31","2026-10-16","-3","2027-02-26","3","","0","2026 매출 불가, 급행 요청 (27.02.26 입고 예정)","10004431-10 · 미발주(대기중) · 33일 경과","0","0","0","0","0","0","3","-3","2026-10-20","-4","2026-10-30","2026-10-30","4","25.6","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["129","129","3309-047-0658","CHASSIS,858E2119-5103","858E2119-5103","EA","0","1","1","0","0","","0","0","-1","1","0","0","0","1","0","2026-10-30","FAI","입고불가","박형식","대흥사(Dae Heung)","2026-08-25","1","2027-02-26","4500011754/80\n4500011754/90\n4500011754/100\n4500011754/110","3\n2\n8\n4","2026-08-31\n2026-08-31\n2026-08-31\n2026-08-31","2027-02-26\n2027-02-26\n2027-08-31\n2028-10-31","2026-10-16","-1","2027-02-26","3","","0","2026 매출 불가, 급행 요청 (27.02.26 입고 예정)","PR 10004384 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","4","25.6","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["130","130","3309-047-0659","CHASSIS,858E2151-5101","858E2151-5101","EA","0","1","1","0","0","","0","0","-1","0","1","0","0","1","0","2026-10-30","FAI","입고불가","박형식","대흥사(Dae Heung)","2026-08-25","1","2027-02-26","4500011754/120\n4500011754/130\n4500011754/140\n4500011754/150","3\n2\n8\n4","2026-08-31\n2026-08-31\n2026-08-31\n2026-08-31","2027-02-26\n2027-02-26\n2027-08-31\n2028-10-31","2026-10-16","-1","2027-02-26","3","","0","2026 매출 불가, 급행 요청 (27.02.26 입고 예정)","PR 10004384 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","4","25.6","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["131","131","3309-047-0660","CHASSIS,858E2202-5111","858E2202-5111","EA","0","1","1","0","0","","0","0","-1","1","0","0","1","0","0","2026-10-30","FAI","입고불가","박형식","대흥사(Dae Heung)","2026-08-25","1","2027-02-26","4500011754/160","2","2026-08-31","2027-02-26","2026-10-16","-1","2027-02-26","3","","0","2026 매출 불가, 급행 요청 (27.02.26 입고 예정)","10004398-830 · 미발주(대기중) · 43일 경과 외 2건","0","0","0","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","1","25.6","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["132","132","3309-047-0661","CHASSIS,858E2203-5111","858E2203-5111","EA","0","1","1","0","0","","0","0","-1","1","0","0","1","0","0","2026-10-30","FAI","입고불가","박형식","대흥사(Dae Heung)","2026-08-25","1","2027-02-26","4500011754/170\n4500011754/180\n4500011754/190\n4500011754/200","3\n2\n5\n7","2026-08-31\n2026-08-31\n2026-08-31\n2026-08-31","2027-02-26\n2027-02-26\n2027-08-31\n2028-10-31","2026-10-16","-1","2027-02-26","3","","0","2026 매출 불가, 급행 요청 (27.02.26 입고 예정)","PR 10004384 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","4","25.6","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["133","133","3309-047-0662","CHASSIS,858E2253-5101","858E2253-5101","EA","0","1","1","0","0","","0","0","-1","0","1","0","0","1","0","2026-10-30","FAI","입고불가","박형식","대흥사(Dae Heung)","2026-08-25","1","2027-02-26","4500011754/210\n4500011754/220\n4500011754/230\n4500011754/240","3\n2\n8\n4","2026-08-31\n2026-08-31\n2026-08-31\n2026-08-31","2027-02-26\n2027-02-26\n2027-08-31\n2028-10-31","2026-10-16","-1","2027-02-26","3","","0","2026 매출 불가, 급행 요청 (27.02.26 입고 예정)","PR 10004384 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","4","25.6","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["134","134","3309-047-0663","CHASSIS,858E2623-5101","858E2623-5101","EA","0","2","2","0","0","","0","0","-2","0","1","0","0","1","1","2026-10-30","FAI","입고불가","박형식","대흥사(Dae Heung)","2026-08-25","2","2027-02-26","4500011754/250\n4500011754/260\n4500011754/270\n4500011754/280","4\n2\n7\n5","2026-08-31\n2026-08-31\n2026-08-31\n2026-08-31","2027-02-26\n2027-02-26\n2027-08-31\n2028-10-31","2026-10-16","-2","2027-02-26","3","","0","2026 매출 불가, 급행 요청 (27.02.26 입고 예정)","PR 10004384 (등록일 자료 없음)","0","0","0","0","0","0","2","-2","2026-10-20","-4","2026-10-30","2026-10-30","4","25.6","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["135","135","3309-047-0664","CHASSIS,858E3049-103","858E3049-103","EA","0","1","1","0","0","","0","0","-1","1","0","0","0","1","0","2026-10-30","FAI","입고불가","박형식","대흥사(Dae Heung)","2026-08-25","1","2027-02-26","4500011754/290\n4500011754/300\n4500011754/310\n4500011754/320","3\n2\n7\n4","2026-08-31\n2026-08-31\n2026-08-31\n2026-08-31","2027-02-26\n2027-02-26\n2027-08-31\n2028-10-31","2026-10-16","-1","2027-02-26","3","","0","2026 매출 불가, 급행 요청 (27.02.26 입고 예정)","PR 10004384 (등록일 자료 없음)","0","0","0","0","0","0","1","-1","2026-10-20","-4","2026-10-30","2026-10-30","4","25.6","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["136","136","3309-047-1009","HYDRAULIC PRESSURE INDICATOR,724ES030-2","724ES030-2","EA","0","12","12","19","0","","0","19","7","0","0","1","0","12","18","2026-11-15","CUEP03","입고완료","박형식","L3 Display Systems","-","11","입고완료","4500009524/60\n4500009524/70\n4500009524/130\n4500009524/140\n4500009524/150\n4500009524/160\n4500009524/170\n4500009524/180\n4500009524/190","23\n23\n23\n23\n22\n22\n22\n22\n22","2025-06-25\n2025-06-25\n2025-06-25\n2025-06-25\n2025-06-25\n2025-06-25\n2025-06-25\n2025-06-25\n2025-06-25","2026-10-10\n2026-10-10\n2027-02-05\n2027-02-05\n2027-06-04\n2027-06-04\n2028-01-07\n2028-01-07\n2028-10-06","입고완료","7","","0","","0","10/14 11ea 입고완료","PR 10003478 (등록일 자료 없음)","19","0","0","0","0","19","12","7","2026-10-20","12","2026-11-06","2026-11-15","","","",""],["137","137","3309-047-1013","HYDRAULIC PRESSURE INDICATOR,724ES030-9","724ES030-9","EA","0","4","4","15","0","","0","15","11","0","0","1","0","4","6","2026-11-15","CUEP03","입고완료","박형식","L3 Display Systems","-","14","입고완료","4500009524/10\n4500009524/90\n4500009524/280\n4500009524/290","14\n19\n18\n18","2025-06-25\n2025-06-25\n2025-06-25\n2025-06-25","2026-12-31\n2027-02-05\n2027-06-04\n2028-10-06","입고완료","11","","0","","0","10/14 14ea 입고완료","PR 10003478 (등록일 자료 없음)","15","0","0","0","0","15","4","11","2026-10-20","12","2026-11-06","2026-11-15","","50.9","PO 3건 · 15~72주 · 최근 66주(25.06)",""],["138","138","3309-047-1017","CONTACTOR,3PDT,120Amp,A02ES205-2","A02ES205-2","EA","0","4","4","0","0","","0","0","-4","0","0","5","8","0","20","2026-11-15","","입고불가","이준영","TE AMP Korea","2025-04-23","115","2027-04-30","4500010139/10\n4500010139/100\n4500010139/110\n4500010139/30\n4500010139/80\n4500010139/90\n4500011767/550\n4500011767/570\n4500011767/580\n4500011767/590\n4500011992/10","115\n30\n30\n17\n30\n30\n12\n12\n24\n12\n1","2025-04-23\n2025-04-23\n2025-04-23\n2025-04-23\n2025-04-23\n2025-04-23\n2026-08-31\n2026-08-31\n2026-08-31\n2026-08-31\n2026-09-21","2027-04-30\n2027-11-30\n2027-11-30\n2027-11-30\n2027-11-30\n2027-11-30\n2027-12-08\n2027-12-08\n2027-12-08\n2027-12-08\n2027-12-25","2026-11-01","-4","2027-04-30","115","","0","27/04/30 115EA 납품 예정","PR 10002674 (등록일 자료 없음)","0","0","0","0","0","0","4","-4","2026-10-20","12","2026-11-06","2026-11-15","12","41.4","PO 5건 · 5~74주 · 최근 56주(24.11)",""],["139","139","3309-047-1035","LIGHT PLATE,125ES349-101","125ES349-101","EA","2","1","3","13","0","","0","13","10","0","1","0","4","1","0","2026-11-24","","입고완료","김지은","AERO PANEL","-","3","2026-10-30","4500009607/120\n4500009607/140","15\n15","-","2027-01-11\n2027-10-12","입고완료","10","2026-11-05","15","","0","10/28 FAI 입수 및 입고완료","PR 10003796 (등록일 자료 없음)","0","0","15","15","0","0","3","-3","2026-10-20","21","2026-11-19","2026-11-24","1","18","PO 1건 · 18~18주 · 최근 18주(25.07)",""],["140","140","3309-047-1037","LIGHT PLATE,125ES256-101","125ES256-101","EA","2","0","2","0","0","","0","0","-2","1","0","0","4","0","0","2026-11-30","","입고불가","김지은","AERO PANEL","2025-07-07","30","2027-01-01","부적합","15\n15","2025-07-18\n2025-07-18","2027-01-11\n2027-10-12","2026-11-16","-2","TBD","TBD","","0","10/21 30ea 반입완료\n최종 부적합 판정으로 사용불가","PR 10003796 (등록일 자료 없음)","0","0","0","30","0","0","2","-2","2026-10-20","27","2026-11-24","2026-11-30","1","18","PO 1건 · 18~18주 · 최근 18주(25.07)",""],["141","141","3309-047-1039","PANEL,125ES232-101","125ES232-101","EA","0","1","1","0","0","","0","0","-1","0","0","1","0","1","0","2026-11-15","","입고가능","김지은","AERO PANEL","-","1","2028-03-27","4500011944/200\n4500011944/210\n4500011944/220","20\n20\n12","-","2028-03-27\n2028-11-27\n2030-04-29","2026-11-01","-1","2026-11-06","17","","0","부적합 재고\n11/06 17ea 수리품 선적예정","PR 10004277 (등록일 자료 없음)","0","0","0","17","0","0","1","-1","2026-10-20","12","2026-11-06","2026-11-15","4","21.3","PO 1건 · 21~21주 · 최근 21주(25.12)",""],["142","142","3309-047-1041","PANEL,419ES219-1","419ES219-1","EA","0","1","1","0","0","","0","0","-1","0","0","1","0","1","0","2026-11-15","","입고불가","신승희","GMS International Corporation","2026-06-26","1","2027-02-15","4500011406/40","17","2026-07-06","2027-02-01","2026-11-01","-1","2027-02-15","17","","0","2026 매출 불가 · 해소 27.02.15 → 대체 공급원·분할 선출하 검토","PR 10004280 (등록일 자료 없음)","0","0","0","17","0","0","1","-1","2026-10-20","12","2026-11-06","2026-11-15","1","20","PO 1건 · 20~20주 · 최근 20주(25.12)",""],["143","143","3309-047-1042","PANEL,724ES211-3","724ES211-3","EA","0","1","1","0","0","","0","0","-1","0","0","1","0","1","0","2026-11-15","","입고불가","신승희","GMS International Corporation","2026-06-25","1","2027-02-15","4500011406/50\n4500011406/10\n4500011406/20\n4500011406/30","17\n20\n20\n12","2026-07-06\n2026-07-06\n2026-07-06\n2026-07-06","2027-02-01\n2028-02-05\n2028-11-05\n2028-11-05","2026-11-01","-1","2027-02-15","17","","0","2026 매출 불가 · 해소 27.02.15 → 대체 공급원·분할 선출하 검토","PR 10004277 (등록일 자료 없음)","0","0","0","17","0","0","1","-1","2026-10-20","12","2026-11-06","2026-11-15","4","17","PO 1건 · 17~17주 · 최근 17주(25.12)",""],["144","144","3309-047-1046","PANEL,791ES221-1","791ES221-1","EA","0","1","1","17","0","","0","17","16","0","0","1","0","1","0","2026-11-15","","입고완료","김지은","AERO PANEL","-","17","입고완료","미납 PO 없음","","-","N/A","입고완료","16","","0","","0","10/16 부적합 재고 17ea 합격완료","","17","0","0","0","0","17","1","16","2026-10-20","12","2026-11-06","2026-11-15","1","21.3","PO 1건 · 21~21주 · 최근 21주(25.12)",""],["145","145","3309-047-1047","PANEL,414E2349-5","414E2349-5","EA","0","1","1","0","0","","0","0","-1","0","0","1","0","1","0","2026-11-15","","입고가능","김지은","AERO PANEL","-","","","NBBC-I-26-0400","17","-","N/A","2026-11-01","-1","","0","","0","Awaiting Boeing waiver on the striping rejection\n11/11 boeing vs aero 미팅 예정","","0","0","0","17","0","0","1","-1","2026-10-20","12","2026-11-06","2026-11-15","1","20","PO 1건 · 20~20주 · 최근 20주(25.12)",""],["146","146","3309-047-1048","PANEL,858ES201-101","858ES201-101","EA","0","1","1","17","0","","0","17","16","0","0","1","0","1","0","2026-11-15","","입고완료","김지은","AERO PANEL","-","17","입고완료","부적합","","-","N/A","입고완료","16","","0","","0","10/14 17ea 입고 완료 (차주 수검예정)","","17","0","0","0","0","17","1","16","2026-10-20","12","2026-11-06","2026-11-15","1","25.3","PO 1건 · 25~25주 · 최근 25주(25.12)",""],["147","147","3309-047-1049","PANEL,858ES203-101","858ES203-101","EA","0","1","1","17","0","","0","17","16","0","0","1","0","1","0","2026-11-15","","입고완료","김지은","AERO PANEL","-","17","2026-10-30","부적합","","-","N/A","입고완료","16","","0","","0","10/31 17ea 대체품 입고완료","","0","0","17","0","0","0","1","-1","2026-10-20","12","2026-11-06","2026-11-15","1","25.1","PO 1건 · 25~25주 · 최근 25주(25.12)",""],["148","148","3309-047-1050","PANEL,858ES215-101","858ES215-101","EA","0","1","1","0","0","","0","0","-1","0","0","1","0","1","0","2026-11-15","","입고가능","김지은","AERO PANEL","-","1","","미납 PO 없음","","-","N/A","2026-11-01","-1","","0","","0","휴니드 반입완료 및 통관대기중(17ea)\nFAI 문서 대기중","","0","0","0","17","0","0","1","-1","2026-10-20","12","2026-11-06","2026-11-15","1","25.3","PO 1건 · 25~25주 · 최근 25주(25.12)",""],["149","149","3309-047-1051","PANEL,724ES223-3","724ES223-3","EA","0","21","21","35","0","","0","35","14","1","0","0","0","6","16","2026-11-30","SSEP04","입고완료","김지은","AERO PANEL","-","12","입고완료","4500011113/10\n4500011113/20\n4500011113/30\n4500011113/40\n4500011113/50\n4500011944/320\n4500011113/60","12\n14\n16\n10\n10\n6\n10","2026-04-07\n2026-04-07\n2026-04-07\n2026-04-07\n2026-04-07\n2026-09-16\n2026-04-07","2026-11-19\n2026-11-19\n2027-06-17\n2028-06-15\n2029-06-14\n2029-06-18\n2030-06-20","입고완료","14","","0","","0","10/21 26ea 입고완료","PR 10004147 (등록일 자료 없음)","35","0","0","0","0","35","21","14","2026-10-20","27","2026-11-24","2026-11-30","7","19.4","PO 1건 · 19~19주 · 최근 19주(26.04)",""],["150","150","3309-047-2020","PLATE ID PN145E2197-2","BACN13A-BA1C-21972","EA","0","2","2","10","0","","0","10","8","0","1","0","0","0","3","2026-11-24","","입고완료","이민정","Jet City Laser, Inc.","2026-09-17","26","2026-10-30","4500012044/10\n4500012044/20","10\n9","2026-09-30\n2026-09-30","2026-10-30\n2027-09-20","입고완료","8","2026-10-26","10","","0","10/28 10ea 입고완료","10004445-1980 · 발주 전환(1차 PO 4500012044)","0","0","10","0","0","0","2","-2","2026-10-20","21","2026-11-19","2026-11-24","2","6.9","PO 1건 · 7~7주 · 최근 7주(23.12)",""],["151","151","3309-047-2190","PLATE ID PN 858E2119-101","BACN13A-BA1C-2119101","EA","0","3","3","19","0","","0","19","16","1","0","0","0","1","2","2026-11-30","","입고완료","이민정","Jet City Laser, Inc.","2026-08-24","26","2026-10-30","4500011924/610","19","2026-09-14","2026-10-30","입고완료","16","2026-10-26","19","","0","10/28 19ea 입고완료","10004384-1360 · 발주 전환(1차 PO 4500011924)","0","0","19","0","0","0","3","-3","2026-10-20","27","2026-11-24","2026-11-30","1","6.6","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["152","152","3309-047-2191","PLATE ID PN 858E2119-103","BACN13A-BA1C-2119103","EA","0","1","1","19","0","","0","19","18","1","0","0","0","1","0","2026-11-30","","입고완료","이민정","Jet City Laser, Inc.","2026-08-24","26","2026-10-30","4500011924/620","19","2026-09-14","2026-10-30","입고완료","18","2026-10-26","19","","0","10/28 19ea 입고완료","10004384-1370 · 발주 전환(1차 PO 4500011924)","0","0","19","0","0","0","1","-1","2026-10-20","27","2026-11-24","2026-11-30","1","6.6","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["153","153","3309-047-2192","PLATE ID PN 858E2202-111 LA1C","BACN13A-LA1C-8582202111","EA","0","1","1","4","0","","0","4","3","1","0","0","1","0","0","2026-11-30","","입고완료","이민정","Jet City Laser, Inc.","2026-08-24","26","2026-10-30","4500011924/630\n4500011924/640","4\n15","2026-09-14\n2026-09-14","2026-10-30\n2027-06-04","입고완료","3","2026-10-26","4","","0","10/28 4ea 입고완료","10004384-1380 · 발주 전환(1차 PO 4500011924)","0","0","4","0","0","0","1","-1","2026-10-20","27","2026-11-24","2026-11-30","2","6.6","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["154","154","3309-047-2193","PLATE ID PN 858E2202-111 LB1C","BACN13A-LB1C-8582202111","EA","0","1","1","4","0","","0","4","3","1","0","0","1","0","0","2026-11-30","","입고완료","이민정","Jet City Laser, Inc.","2026-08-24","26","2026-10-30","4500011924/650\n4500011924/660","4\n15","2026-09-14\n2026-09-14","2026-10-30\n2027-06-04","입고완료","3","2026-10-26","4","","0","10/28 4ea 입고완료","10004384-1390 · 발주 전환(1차 PO 4500011924)","0","0","4","0","0","0","1","-1","2026-10-20","27","2026-11-24","2026-11-30","2","6.6","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["155","155","3309-047-2194","PLATE ID PN 858E2203-111 LA1C","BACN13A-LA1C-8582203111","EA","0","1","1","19","0","","0","19","18","1","0","0","1","0","0","2026-11-30","","입고완료","이민정","Jet City Laser, Inc.","2026-08-24","26","2026-10-30","4500011924/680","19","2026-09-14","2026-10-30","입고완료","18","2026-10-26","19","","0","10/28 19ea 입고완료","10004384-1400 · 발주 전환(1차 PO 4500011924)","0","0","19","0","0","0","1","-1","2026-10-20","27","2026-11-24","2026-11-30","1","6.6","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["156","156","3309-047-2195","PLATE ID PN 858E2203-111 LB1C","BACN13A-LB1C-8582203111","EA","0","1","1","19","0","","0","19","18","1","0","0","1","0","0","2026-11-30","","입고완료","이민정","Jet City Laser, Inc.","2026-08-24","26","2026-10-30","4500011924/690","19","2026-09-14","2026-10-30","입고완료","18","2026-10-26","19","","0","10/28 19ea 입고완료","10004384-1410 · 발주 전환(1차 PO 4500011924)","0","0","19","0","0","0","1","-1","2026-10-20","27","2026-11-24","2026-11-30","1","6.6","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["157","157","3309-047-2196","PLATE ID PN 858E2253-101","BACN13-BA1C-2253101","EA","0","1","1","19","0","","0","19","18","0","1","0","0","1","0","2026-11-24","","입고완료","이민정","Jet City Laser, Inc.","2026-08-24","26","2026-10-30","4500011924/700","19","2026-09-14","2026-10-30","입고완료","18","2026-10-26","19","","0","10/28 19ea 입고완료","10004384-1420 · 발주 전환(1차 PO 4500011924)","0","0","19","0","0","0","1","-1","2026-10-20","21","2026-11-19","2026-11-24","1","6.6","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["158","158","3309-047-2197","PLATE ID PN 858E2623-101","BACN13A-KA1C-2623101","EA","0","2","2","20","0","","0","20","18","0","1","0","0","1","1","2026-11-24","","입고완료","이민정","Jet City Laser, Inc.","2026-08-24","26","2026-10-30","4500011924/710","20","2026-09-14","2026-10-30","입고완료","18","2026-10-26","20","","0","10/28 20ea 입고완료","10004384-1430 · 발주 전환(1차 PO 4500011924)","0","0","20","0","0","0","2","-2","2026-10-20","21","2026-11-19","2026-11-24","1","6.6","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["159","159","3309-047-2198","PLATE ID PN 858E2151-101 BA1C","BACN13A-BA1C-2151101","EA","0","1","1","12","0","","0","12","11","0","1","0","0","1","0","2026-11-24","","입고완료","이민정","Jet City Laser, Inc.","2026-08-24","26","2026-10-30","4500011924/720","19","2026-09-14","2026-10-30","입고완료","11","2026-10-26","12","","0","10/28 19ea 입고완료","10004384-1440 · 발주 전환(1차 PO 4500011924)","0","0","19","0","0","0","1","-1","2026-10-20","21","2026-11-19","2026-11-24","1","6.6","입고 실적 없음 → 오픈 PO 입고예정 기준(PO 1건)",""],["160","160","3309-047-4016","NUT,BACN10JC3","BACN10JC3","EA","0","15","15","94","0","","0","94","79","1","9","5","14","2","17","2026-11-15","","입고완료","박소영(사관)","BDS(Boeing Distribution Service Inc","2026-09-17","","입고완료","4500011862/10\n4500011862/20","50\n50","2026-09-08\n2026-09-08","2026-10-30\n2031-05-09","입고완료","79","","0","","0","10/14 100ea 입고완료","10004445-2260 · 미발주(대기중) · 25일 경과","94","4","0","350","0","98","15","83","2026-10-20","12","2026-11-06","2026-11-15","2","35.7","PO 3건 · 4~61주 · 최근 42주(25.07)",""],["161","161","3309-047-7065","INCLINOMETER ASSY","BO02001-1","EA","0","20","20","35","0","","0","35","15","4","0","0","12","34","0","2026-11-30","","입고완료","김지은","Oppenheimer Precision Products, INC","2025-12-22","","입고완료","4500009531/10\n4500010064/10","118\n37","2025-07-07\n2025-08-12","2026-10-01\n2026-10-15","입고완료","15","","0","","0","10/19 57ea 입고완료","10004007-800 · 미발주(RFQ 진행중) · 294일 경과 외 5건","35","6","0","0","0","41","20","21","2026-10-20","27","2026-11-24","2026-11-30","2","15.3","PO 3건 · 0~24주 · 최근 0주(24.08)",""],["162","162","3309-221-0597","IUID LABEL,74A890215-2059","74A890215-2059","EA","0","15","15","8","0","","0","8","-7","0","1","0","9","6","0","2026-11-24","","입고완료","박소영(사관)","BOEING(BFM)","2026-06-10","7","2026-12-29","4500011416/170","15","2026-07-07","2026-12-31","입고완료","0","","0","","0","결품 해소 12/29 예정, 급행 요청 - 생산관리 투입 확인*","PR 10004241 (등록일 자료 없음)","8","0","0","0","0","8","15","-7","2026-10-20","21","2026-11-19","2026-11-24","1","1.1","PO 1건 · 1~1주 · 최근 1주(25.12)",""],["163","163","3309-222-0071","PANEL ASSEMBLY, CB#4, 901-175-178-5109","901-175-178-5109","EA","0","2","2","0","0","","0","0","-2","0","1","0","6","2","2","2026-11-24","","입고가능","박형식","대흥사(Dae Heung)","2025-03-21","2","2026-11-02","4500009122/30","3","2025-03-21","2026-10-26","입고완료","-2","","0","","0","11/9 2ea 입고전망","PR 10003580 (등록일 자료 없음)","0","0","0","0","0","0","2","-2","2026-10-20","21","2026-11-19","2026-11-24","1","66.9","PO 1건 · 67~67주 · 최근 67주(25.03)",""],["164","164","3309-222-0103","LIGHT PLATE,901-372-233-101","901-372-233-101","EA","0","5","5","0","0","","0","0","-5","2","0","0","4","5","0","2026-11-30","","입고가능","김지은","AERO PANEL","-","5","TBD","NBBD-I-26-0635","5","-","N/A","2026-11-16","-5","","0","","0","In process of rework\nBoeing 확인 필요\n11/11 boeing vs aero 미팅 예정","구매요청 미등록 (10월 1주차 미발주현황 기준)","0","0","0","0","5","0","5","-5","2026-10-20","27","2026-11-24","2026-11-30","","24.7","PO 3건 · 16~39주 · 최근 19주(26.03) → 지금 발주 시 27.04.03 2027년(2026 매출 불가)","2027-04-03"],["165","165","3309-222-2014","SWITCH ,901-372-251-101","901-372-251-101","EA","38","2","40","0","0","","0","0","-40","1","0","0","41","6","31","2026-11-15","SUEP12","급행요청","신승희","Airtech International Inc","2024-10-24","38","2026-11-15","4500008175/40\n4500008175/550","21\n17","2024-11-13\n2024-11-13","2026-11-15\n2026-11-15","2026-11-01","-40","","0","","0","10/21 2ea 입고완료, 후속 38ea Safran 일정지연中","PR 10003381 (등록일 자료 없음)","0","0","0","0","4","0","40","-40","2026-10-20","12","2026-11-06","2026-11-15","3","57.3","PO 5건 · 6~153주 · 최근 30주(25.09)",""],["166","166","3309-222-2020","POWER FILTER-FEED,901-375-040-101","901-375-040-101","EA","13","4","17","0","0","","0","0","-17","0","2","0","24","16","4","2026-11-24","","급행요청","신승희","Airtech International Inc","-","10","2026-11-15","미납 PO 없음","","-","N/A","2026-11-10","-17","2026-11-15","10","2027-02-28","8","11월 중순 10개 전망(부적합 대체품)\n`27. 2월 8개 전망(부적합 대체품)","구매요청 미등록 (10월 1주차 미발주현황 기준)","0","0","0","3","16","0","17","-17","2026-10-20","21","2026-11-19","2026-11-24","","42.2","PO 5건 · 31~55주 · 최근 38주(25.05) → 지금 발주 시 27.08.03 2027년(2026 매출 불가)","2027-08-03"],["167","167","3309-222-2021","BATTERY INDICATOR,901-375-209-103","901-375-209-103","EA","17","2","19","0","0","","0","0","-19","1","0","0","20","6","31","2026-11-15","SUEP12","입고불가","이민정","Moog","2024-10-24","5","2026-10-30","4500008314/10\n4500008314/20","5\n16","2024-12-09\n2024-12-09","2026-10-30\n2026-12-30","2026-11-01","-19","2026-12-30","5","","0","10/30 5ea 출고 → 11월로 지연전망(입고불가로 변경)","PR 10003381 (등록일 자료 없음)","0","0","0","0","0","0","19","-19","2026-10-20","12","2026-11-06","2026-11-15","3","54.1","PO 5건 · 1~91주 · 최근 91주(24.12)",""],["168","168","3309-222-3008","Screw,NAS1801-08-4","NAS1801-08-4","EA","4","30","34","0","0","","0","0","-34","0","2","0","262","198","30","2026-11-24","","입고가능","박소영(사관)","BDS(Boeing Distribution Service Inc","-","50","2026-11-30","미납 PO 없음","","-","N/A","2026-11-10","-34","","0","","0","airtech 수배 가능","구매요청 미등록 (10월 1주차 미발주현황 기준)","0","0","0","0","0","0","34","-34","2026-10-20","21","2026-11-19","2026-11-24","","19.6","PO 6건 · 4~70주 · 최근 14주(25.04) → 지금 발주 시 27.02.26 2027년(2026 매출 불가)","2027-02-26"],["169","169","3309-222-7005","BUS ASSY,4V026-7-10-3","4V026-7-10-3","EA","1","0","1","0","0","","3","3","2","0","1","0","1","1","0","2026-11-24","","입고완료","신승희","Flame Enterprises","-","3","2026-10-30","미납 PO 없음","","-","N/A","입고완료","2","","0","","0","부적합 COC 입수완료","구매요청 미등록 (10월 1주차 미발주현황 기준)","0","0","0","3","0","0","1","-1","2026-10-20","21","2026-11-19","2026-11-24","","33.2","PO 3건 · 11~48주 · 최근 48주(24.12) → 지금 발주 시 27.06.01 2027년(2026 매출 불가)","2027-06-01"]],"asof":"2026.11.02","cmp":{"11/05":[31,21,39,78],"10/31":[40,45,40,44]}}</script>
 <script>
 /* ▼ 여기 두 줄만 채우세요 (설치_방법.md 참고) */
@@ -417,6 +1346,7 @@ const S={sort:{L:'GK',d:1},tab:'dash',mode:'day',pickD:'',hs:{},ready:false,hsRe
 try{S.mode=localStorage.getItem('ms.mode')||'day'}catch(_){}
 const R=D.rows.map(r=>({c:r[IX.GM],v:r}));
 const byC={};R.forEach(r=>byC[r.c]=r);
+const COLL=D.coll||'ms2';
 const pend={};let dbc=null,cl=null,ME='';
 try{ME=localStorage.getItem('ms.me')||''}catch(_){}
 const me=()=>ME||'익명';
@@ -539,7 +1469,7 @@ function stateOf(getJ){
 S.curBuyer=r=>val(r,'HK');
 const liveState=()=>stateOf(r=>val(r,'HJ'));
 function seeds(){
-  const o=stateOf(r=>r.v[IX.HJ]);const b1=D.cmp['10/31'],bi={'급행요청':0,'입고가능':1,'입고불가':2,'입고완료':3},c0={};ORD.forEach(j=>c0[j]=b1[bi[j]]);
+  const o=D.seed05||stateOf(r=>r.v[IX.HJ]);const b1=D.cmp['10/31'],bi={'급행요청':0,'입고가능':1,'입고불가':2,'입고완료':3},c0={};ORD.forEach(j=>c0[j]=b1[bi[j]]);
   return [{d:'2026-10-31',c:c0,seed:1},{d:'2026-11-05',c:o.c,b:o.b,m:o.m,seed:1}];
 }
 function allSnaps(){
@@ -646,7 +1576,7 @@ function setCell(code,L,v){
   const doc={c:code,f:f,m:m};
   S.ov[code]=doc;pend[code]=Date.now();render();
   if(!dbc)return;
-  const p=Object.keys(f).length?dbc.doc('ms2/'+key(code)).set(doc):dbc.doc('ms2/'+key(code)).delete();
+  const p=Object.keys(f).length?dbc.doc(COLL+'/'+key(code)).set(doc):dbc.doc(COLL+'/'+key(code)).delete();
   p.catch(()=>toast('저장에 실패했습니다. 잠시 후 다시 시도하세요.'));
 }
 /* 편집 */
@@ -790,7 +1720,7 @@ async function impApply(){
     const r=byC[code],cur=S.ov[code]||{f:{},m:{}},f=Object.assign({},cur.f),m=Object.assign({},cur.m);
     by[code].forEach(x=>{if(String(r.v[IX[x.L]])===x.n){delete f[x.L];delete m[x.L]}else{f[x.L]=x.n;m[x.L]={by:me(),t:Date.now()}}});
     const doc={c:code,f:f,m:m};S.ov[code]=doc;pend[code]=Date.now();
-    try{await (Object.keys(f).length?dbc.doc('ms2/'+key(code)).set(doc):dbc.doc('ms2/'+key(code)).delete())}catch(e){fail++}
+    try{await (Object.keys(f).length?dbc.doc(COLL+'/'+key(code)).set(doc):dbc.doc(COLL+'/'+key(code)).delete())}catch(e){fail++}
     pend[code]=Date.now();
   }
   impClose();render();
@@ -809,6 +1739,30 @@ $('#impf').onchange=async e=>{
 };
 $('#impbg').addEventListener('click',e=>{if(e.target.id==='impbg')impClose()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&IMP)impClose()});
+
+/* 현재 상태로 새 HTML 만들기 */
+const MK1='/*DA'+'TA*/',MK2='/*SR'+'C*/';
+function genHtml(){
+  const X=document.getElementById('src').textContent.replace(/<\\u002F/g,'</');
+  const nd=JSON.parse(JSON.stringify(D));
+  if(!D.seed05){
+    const s={c:{},b:{},m:{}};ORD.forEach(j=>s.c[j]=0);
+    R.forEach(r=>{const j=r.v[IX.HJ];if(s.c[j]!=null)s.c[j]++;if(ORD.includes(j))s.m[r.c]=ORD.indexOf(j);
+      names(r.v[IX.HK]).forEach(n=>{const o=s.b[n]=s.b[n]||{};o[j]=(o[j]||0)+1})});
+    nd.seed05=s;
+  }
+  nd.rows=R.map(r=>D.cols.map(L=>String(val(r,L))));
+  let nc='ms'+TODAY.replace(/-/g,'').slice(2);if(nc===(D.coll||'ms2'))nc+='b';
+  nd.coll=nc;nd.gen=TODAY;
+  const js=JSON.stringify(nd).replace(/<\//g,'<\\/');
+  return X.split(MK1).join(js).split(MK2).join(X.replace(/<\//g,'<\\u002F'));
+}
+$('#gen').onclick=async()=>{
+  let html;try{html=genHtml()}catch(e){console.log('GENERR',e&&e.message);toast('만들지 못했습니다.');return}
+  const fn='매출_결품_관리_'+TODAY.replace(/-/g,'')+'.html';
+  try{const dl=cl&&await cl.use('downloads');if(!dl)throw 0;await dl.save({filename:fn,data:html});toast('저장했습니다 — 이 파일로 교체하면 지금 값이 기준값이 됩니다.')}
+  catch(e){try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));a.download=fn;document.body.appendChild(a);a.click();a.remove();toast('저장했습니다 — 이 파일로 교체하면 지금 값이 기준값이 됩니다.')}catch(_){toast('저장할 수 없습니다.')}}
+};
 /* CSV */
 $('#csv').onclick=async()=>{
   const V=visible(),q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
@@ -826,7 +1780,7 @@ async function connect(){
     const db=await cl.use('db');
     if(!db){setSync('err','조회 전용 (저장소 미연결)');return}
     dbc=db;S.RO=false;
-    db.collection('ms2').onSnapshot(snap=>{
+    db.collection(COLL).onSnapshot(snap=>{
       const now=Date.now(),seen={};
       snap.docs.forEach(d=>{const x=d.data();if(!x||!x.c||!byC[x.c])return;seen[x.c]=1;if(pend[x.c]&&now-pend[x.c]<6000)return;S.ov[x.c]=x});
       Object.keys(S.ov).forEach(c=>{if(!seen[c]&&!(pend[c]&&now-pend[c]<6000))delete S.ov[c]});

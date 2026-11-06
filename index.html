@@ -683,7 +683,7 @@ $('#me').onchange=e=>{ME=e.target.value;try{localStorage.setItem('ms.me',ME)}cat
 /* 엑셀 업데이트 (STN=구성품목 코드 기준) */
 const nl=s=>String(s==null?'':s).replace(/\s+/g,'').toLowerCase();
 const ALT={HJ:['매출판정','2026매출판정'],IA:['구매요청번호','구매요청번호·상태','구매요청번호/상태','구매요청번호상태'],HK:['담당자','구매담당자'],HL:['업체명','협력사','업체']};
-const KEYRE=/^(stn|구성품목코드|자재번호|자재코드|품번)$/;
+const KEYRE=/^(stn|구성품목코드|자재번호|자재코드|품번|p\/?n|partno\.?)$|stn|(huneed|휴니드).*(p\/?n|품번)/;
 let IMP=null;
 function nv(x){
   if(x==null)return'';
@@ -696,15 +696,15 @@ function nv(x){
 const same=(a,b)=>a===b||(a!==''&&b!==''&&!isNaN(+a)&&!isNaN(+b)&&+a===+b);
 function impMap(hdr){
   const sl={};C.forEach(c=>{if(!c[4])return;const k=nl(c[1]);(sl[k]=sl[k]||[]).push(c[0]);(ALT[c[0]]||[]).forEach(a=>{const kk=nl(a);if(!sl[kk])sl[kk]=[c[0]]})});
-  const seen={},map={};let kc=-1;
+  const seen={},map={},kcs=[];let kc=-1;
   hdr.forEach((h,i)=>{
     const k=nl(h);if(!k)return;
-    if(kc<0&&KEYRE.test(k)){kc=i;return}
+    if(KEYRE.test(k)){kcs.push(i);if(kc<0)kc=i;return}
     const l=sl[k];if(!l)return;
     const n=seen[k]=(seen[k]||0)+1;
     const L=l[n-1];if(L&&!Object.values(map).includes(L))map[i]=L;
   });
-  return {kc:kc,map:map};
+  return {kc:kc,kcs:kcs,map:map};
 }
 function impParse(wb){
   let best=null;
@@ -713,7 +713,7 @@ function impParse(wb){
     for(let h=0;h<Math.min(rows.length,15);h++){
       const m=impMap(rows[h]);if(m.kc<0)continue;
       const sc=Object.keys(m.map).length;
-      if(!best||sc>best.sc)best={sc:sc,sn:sn,h:h,rows:rows,kc:m.kc,map:m.map,hdr:rows[h]};
+      if(!best||sc>best.sc)best={sc:sc,sn:sn,h:h,rows:rows,kc:m.kc,kcs:m.kcs,map:m.map,hdr:rows[h]};
     }
   });
   return best;
@@ -722,9 +722,9 @@ function impDiff(P){
   const up={};Object.keys(byC).forEach(c=>up[c.toUpperCase()]=c);
   const ch=[],cols={},miss=[];let hit=0,tot=0;
   for(let i=P.h+1;i<P.rows.length;i++){
-    const row=P.rows[i],raw=String(row[P.kc]==null?'':row[P.kc]).trim();
+    const row=P.rows[i];let raw='',code=null;
+    for(const ki of P.kcs){const r0=String(row[ki]==null?'':row[ki]).trim();if(!r0)continue;if(!raw)raw=r0;if(up[r0.toUpperCase()]){raw=r0;code=up[r0.toUpperCase()];break}}
     if(!raw)continue;tot++;
-    const code=up[raw.toUpperCase()];
     if(!code){miss.push(raw);continue}
     hit++;
     Object.keys(P.map).forEach(ci=>{
@@ -742,8 +742,8 @@ function impShow(){
   const P=IMP,D2=P.d,b=$('#impb'),a=$('#impa');
   const lab=L=>{const c=C.find(x=>x[0]===L);return c?c[1].replace(/\n/g,' ')+(c[3]===2?'':' (생산)'):L};
   const on=P.on,sel=D2.ch.filter(x=>on[x.L]);
-  const unm=P.hdr.map((h,i)=>({h:String(h).replace(/\s+/g,' ').trim(),i:i})).filter(x=>x.h&&x.i!==P.kc&&!P.map[x.i]);
-  b.innerHTML='<div class="is">시트 <b>'+esc(P.sn)+'</b> · 키 열 <b>'+esc(String(P.hdr[P.kc]).replace(/\s+/g,' '))+'</b> 기준<br>파일 '+D2.tot+'행 중 <b>'+D2.hit+'행</b>이 목록과 일치, <b>'+D2.miss.length+'행</b>은 목록에 없는 STN이라 건너뜁니다. 바뀌는 칸 <b>'+sel.length+'개</b> ('+new Set(sel.map(x=>x.code)).size+'개 자재).</div>'
+  const unm=P.hdr.map((h,i)=>({h:String(h).replace(/\s+/g,' ').trim(),i:i})).filter(x=>x.h&&!P.kcs.includes(x.i)&&!P.map[x.i]);
+  b.innerHTML='<div class="is">시트 <b>'+esc(P.sn)+'</b> · 키 열 <b>'+esc(P.kcs.map(i=>String(P.hdr[i]).replace(/\s+/g,' ').trim()).join(' / '))+'</b> 기준<br>파일 '+D2.tot+'행 중 <b>'+D2.hit+'행</b>이 목록과 일치, <b>'+D2.miss.length+'행</b>은 목록에 없는 STN이라 건너뜁니다. 바뀌는 칸 <b>'+sel.length+'개</b> ('+new Set(sel.map(x=>x.code)).size+'개 자재).</div>'
    +'<div class="ic">'+Object.keys(D2.cols).map(L=>'<label><input type="checkbox" data-l="'+L+'"'+(on[L]?' checked':'')+'>'+esc(lab(L))+'<b>'+D2.cols[L]+'</b></label>').join('')+'</div>'
    +'<label class="is"><input type="checkbox" id="impw"'+(P.wipe?' checked':'')+'> 엑셀의 빈 칸은 사이트 값을 지움 (기본: 빈 칸은 무시)</label>'
    +(sel.length?'<div class="il"><table><thead><tr><th>STN</th><th>열</th><th>이전</th><th>→ 이후</th></tr></thead><tbody>'+sel.slice(0,60).map(x=>'<tr><td>'+esc(x.code)+'</td><td>'+esc(lab(x.L))+'</td><td>'+esc(x.o)+'</td><td>'+esc(x.n)+'</td></tr>').join('')+'</tbody></table></div>'+(sel.length>60?'<div class="is">… 외 '+(sel.length-60)+'건</div>':''):'<div class="is">바뀌는 값이 없습니다.</div>')

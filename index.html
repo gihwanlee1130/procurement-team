@@ -90,12 +90,13 @@ iframe[hidden]{display:none}
 var loaded={},K=['todo','sales','six'],cur='todo',locked=true;
 var TEAM=['최성현','김민','이기환','김태희','이준영','박형식','조재완','이주희','김혜린','김형수','김소현','신승희','이민정','김지은','황가람','박소영','박대정'];
 var ADM=['최성현','김민','이기환','김태희'];
-function lg(k){try{return localStorage.getItem(k)||''}catch(e){return ''}}
-function ls(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+function lg(k){try{return sessionStorage.getItem(k)||''}catch(e){return ''}}
+function ls(k,v){try{sessionStorage.setItem(k,v)}catch(e){}}
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+var SHIM='<script>(function(){try{var ls=window.localStorage,ss=parent.sessionStorage,K={"nb.me":1,"ms.me":1};var w={getItem:function(k){return K[k]?ss.getItem(k):ls.getItem(k)},setItem:function(k,v){K[k]?ss.setItem(k,v):ls.setItem(k,v)},removeItem:function(k){K[k]?ss.removeItem(k):ls.removeItem(k)},clear:function(){ls.clear()},key:function(i){return ls.key(i)},get length(){return ls.length}};Object.defineProperty(window,"localStorage",{configurable:true,get:function(){return w}})}catch(e){}})();<\/script>';
 function load(k){ if(loaded[k])return; loaded[k]=1;
-  $('f-'+k).srcdoc=JSON.parse($('p-'+k).textContent);
+  $('f-'+k).srcdoc=JSON.parse($('p-'+k).textContent).replace(/<head[^>]*>/,function(m){return m+SHIM});
 }
 function show(k){
   if(locked)return;
@@ -205,9 +206,8 @@ $('mk').onclick=async function(){
   finally{btn.disabled=false;btn.innerHTML=old}
 };
 /* ---- 시작: 항상 To Do List, 사용자 선택 필수 ---- */
-var nb0=lg('nb.me');
-if(nb0&&TEAM.indexOf(nb0)>=0){ls('ms.me',nb0);lastNb=lastMs=nb0;locked=false;$('gate').classList.remove('on');show('todo');adm()}
-else{lock()}
+try{sessionStorage.removeItem('nb.me');sessionStorage.removeItem('ms.me')}catch(e){}
+lock();
 })();
 </script>
 </body></html>
